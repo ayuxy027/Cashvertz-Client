@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { Analytics } from '@vercel/analytics/react'
 import { AppProvider } from './context/AppContext'
 import ComingSoon from './ComingSoon'
 import EventsPage from './pages/EventsPage'
@@ -14,6 +15,7 @@ const App = () => {
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </Router>
+      <Analytics />
     </AppProvider>
   )
 }
