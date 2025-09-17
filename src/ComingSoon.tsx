@@ -147,9 +147,8 @@ const ComingSoon = () => {
                         onClick={() => navigate('/')}
                     />
                 </div>
-                <nav className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-medium text-white/80">
+                <nav className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-medium text-white/80">                                                                                                        
                     <a className="hover:text-white transition-colors duration-200 whitespace-nowrap" href="#about">About Us</a>
-                    <a className="hover:text-white transition-colors duration-200 whitespace-nowrap" href="/admin">Admin</a>
                     <div className="flex items-center gap-4">
                         {/* social icons */}
                         <a aria-label="Instagram" className="social-icon hover:text-white" href="https://www.instagram.com/cashvertz">

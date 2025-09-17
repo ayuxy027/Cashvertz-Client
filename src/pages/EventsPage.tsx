@@ -756,7 +756,6 @@ const EventsPage = () => {
                     />
                     <nav className="hidden sm:flex items-center gap-6 text-sm font-medium text-white/80">
                         <a className="hover:text-white transition-colors" href="#about">About Us</a>
-                        <a className="hover:text-white transition-colors" href="/admin">Admin</a>
                         <div className="flex items-center gap-4">
                             <a aria-label="Instagram" className="hover:text-white transition-colors" href="https://www.instagram.com/cashvertz">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
