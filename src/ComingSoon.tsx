@@ -165,10 +165,10 @@ const ComingSoon = () => {
             </header>
 
             <main className="mx-auto flex w-full max-w-6xl flex-col items-center px-4 pb-16 sm:px-6 sm:pb-24 text-center">
-                <h1 className="mt-4 text-4xl font-bold tracking-tight sm:mt-6 sm:text-5xl md:mt-10 md:text-6xl lg:text-6xl xl:text-7xl" style={{ color: '#66FFB2' }}>
+                <h1 className="mt-4 text-3xl font-bold tracking-tight sm:mt-6 sm:text-4xl md:mt-10 md:text-5xl lg:text-6xl xl:text-7xl" style={{ color: '#66FFB2' }}>
                     We're Still Cooking
                 </h1>
-                <h2 className="mb-6 text-4xl font-bold tracking-tight sm:mb-8 sm:text-5xl md:text-6xl lg:text-6xl xl:text-7xl" style={{ color: '#66FFB2' }}>
+                <h2 className="mb-6 text-2xl font-semibold tracking-tight sm:mb-8 sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl" style={{ color: '#66FFB2' }}>
                     Our Website...
                 </h2>
                 <p className="mx-auto max-w-2xl px-4 text-base font-light text-white/90 sm:px-0 sm:text-lg md:text-xl leading-relaxed">
