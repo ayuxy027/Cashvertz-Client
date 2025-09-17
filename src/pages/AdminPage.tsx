@@ -58,8 +58,12 @@ const AdminPage = () => {
     }
 
     const filteredSelections = selections.filter(selection => {
-        if (filter === 'completed') return selection.is_completed
-        if (filter === 'pending') return !selection.is_completed
+        if (filter === 'completed') {
+            return selection.is_completed
+        }
+        if (filter === 'pending') {
+            return !selection.is_completed
+        }
         return true
     })
 
@@ -191,8 +195,8 @@ const AdminPage = () => {
                     <button
                         onClick={() => setFilter('all')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'all'
-                                ? 'bg-green-500 text-black'
-                                : 'bg-white/10 text-white/80 hover:bg-white/20'
+                            ? 'bg-green-500 text-black'
+                            : 'bg-white/10 text-white/80 hover:bg-white/20'
                             }`}
                     >
                         All ({selections.length})
@@ -200,8 +204,8 @@ const AdminPage = () => {
                     <button
                         onClick={() => setFilter('completed')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'completed'
-                                ? 'bg-green-500 text-black'
-                                : 'bg-white/10 text-white/80 hover:bg-white/20'
+                            ? 'bg-green-500 text-black'
+                            : 'bg-white/10 text-white/80 hover:bg-white/20'
                             }`}
                     >
                         Completed ({selections.filter(s => s.is_completed).length})
@@ -209,8 +213,8 @@ const AdminPage = () => {
                     <button
                         onClick={() => setFilter('pending')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'pending'
-                                ? 'bg-green-500 text-black'
-                                : 'bg-white/10 text-white/80 hover:bg-white/20'
+                            ? 'bg-green-500 text-black'
+                            : 'bg-white/10 text-white/80 hover:bg-white/20'
                             }`}
                     >
                         Pending ({selections.filter(s => !s.is_completed).length})
@@ -249,8 +253,8 @@ const AdminPage = () => {
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${selection.is_completed
-                                                    ? 'bg-green-500/20 text-green-400'
-                                                    : 'bg-yellow-500/20 text-yellow-400'
+                                                ? 'bg-green-500/20 text-green-400'
+                                                : 'bg-yellow-500/20 text-yellow-400'
                                                 }`}>
                                                 {selection.is_completed ? 'Completed' : 'Pending'}
                                             </span>
