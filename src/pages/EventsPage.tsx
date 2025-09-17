@@ -420,35 +420,35 @@ const EventsPage = () => {
                 <div className="text-sm text-red-400 mb-6">{error}</div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mt-8 sm:mt-12">
-                <div className="feature-card p-4 sm:p-6 text-center">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
-                        <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-3 sm:gap-6 mt-8 sm:mt-12">
+                <div className="feature-card p-3 sm:p-6 text-center">
+                    <div className="w-10 h-10 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
+                        <svg className="w-5 h-5 sm:w-8 sm:h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                         </svg>
                     </div>
-                    <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Event Rewards</h3>
-                    <p className="text-sm sm:text-base text-white/80">Special gifts and rewards for event participants</p>
+                    <h3 className="text-sm sm:text-xl font-bold text-white mb-2 sm:mb-2">Event Rewards</h3>
+                    <p className="text-xs sm:text-base text-white/80 hidden sm:block">Special gifts and rewards for event participants</p>
                 </div>
 
-                <div className="feature-card p-4 sm:p-6 text-center">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
-                        <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <div className="feature-card p-3 sm:p-6 text-center">
+                    <div className="w-10 h-10 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
+                        <svg className="w-5 h-5 sm:w-8 sm:h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                         </svg>
                     </div>
-                    <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Exclusive Access</h3>
-                    <p className="text-sm sm:text-base text-white/80">Get access to special offers and discounts</p>
+                    <h3 className="text-sm sm:text-xl font-bold text-white mb-2 sm:mb-2">Exclusive Access</h3>
+                    <p className="text-xs sm:text-base text-white/80 hidden sm:block">Get access to special offers and discounts</p>
                 </div>
 
-                <div className="feature-card p-4 sm:p-6 text-center">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
-                        <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <div className="feature-card p-3 sm:p-6 text-center">
+                    <div className="w-10 h-10 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 flex items-center justify-center">
+                        <svg className="w-5 h-5 sm:w-8 sm:h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
                         </svg>
                     </div>
-                    <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Event Participation</h3>
-                    <p className="text-sm sm:text-base text-white/80">Join our exclusive event and win prizes</p>
+                    <h3 className="text-sm sm:text-xl font-bold text-white mb-2 sm:mb-2">Event Participation</h3>
+                    <p className="text-xs sm:text-base text-white/80 hidden sm:block">Join our exclusive event and win prizes</p>
                 </div>
             </div>
         </div>
