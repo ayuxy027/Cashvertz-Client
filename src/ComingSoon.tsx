@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import logo from './assets/logo-light.png'
 import percentImg from './assets/percentage.png'
 import coinImg from './assets/coin.png'
@@ -66,6 +67,7 @@ const AnimatedCounter = ({ value, label }: { value: number; label: string }) => 
 }
 
 const ComingSoon = () => {
+    const navigate = useNavigate()
     const launchAt = useMemo(() => {
         // Launch date: October 21, 2025 12:00:00 AM UTC
         return new Date('2025-10-21T00:00:00Z')
@@ -138,10 +140,16 @@ const ComingSoon = () => {
 
             <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
                 <div className="flex items-center">
-                    <img src={logo} alt="CashVertz" className="h-16 w-auto object-cover" />
+                    <img
+                        src={logo}
+                        alt="CashVertz"
+                        className="h-16 w-auto object-cover cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                        onClick={() => navigate('/')}
+                    />
                 </div>
                 <nav className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-medium text-white/80">
                     <a className="hover:text-white transition-colors duration-200 whitespace-nowrap" href="#about">About Us</a>
+                    <a className="hover:text-white transition-colors duration-200 whitespace-nowrap" href="/admin">Admin</a>
                     <div className="flex items-center gap-4">
                         {/* social icons */}
                         <a aria-label="Instagram" className="social-icon hover:text-white" href="https://www.instagram.com/cashvertz">
@@ -181,19 +189,19 @@ const ComingSoon = () => {
                 </div>
 
                 <div className="mt-12 w-full max-w-2xl px-4 sm:mt-16 sm:px-0">
-                    <form onSubmit={onSubmit} className="email-form flex items-center rounded-full overflow-visible gap-2 p-1 h-14">
+                    <form onSubmit={onSubmit} className="email-form flex items-stretch overflow-hidden rounded-full">
                         <input
                             type="email"
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="Enter your email here"
-                            className="flex-1 bg-transparent h-full px-4 text-white placeholder:text-white/50 focus:outline-none text-sm sm:text-base rounded-full"
+                            className="flex-1 bg-transparent px-4 py-3 text-white placeholder:text-white/50 focus:outline-none text-sm sm:px-6 sm:py-4 sm:text-base"
                         />
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="group flex items-center gap-2 rounded-full px-5 h-full text-sm font-semibold text-black hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed sm:gap-3 sm:px-7 sm:text-base shrink-0 whitespace-nowrap min-w-[112px]"
+                            className="group flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-black hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed sm:gap-3 sm:px-8 sm:py-4 sm:text-base"
                             style={{ backgroundColor: '#66FFB2' }}
                         >
                             {isLoading ? (
@@ -220,6 +228,20 @@ const ComingSoon = () => {
                 {submitted && (
                     <div className="mt-3 text-sm" style={{ color: '#66FFB2' }}>Thanks! Check your email for confirmation.</div>
                 )}
+
+                {/* Join Event Button */}
+                <div className="mt-8">
+                    <a
+                        href="/events"
+                        className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition-all duration-200 sm:px-8 sm:py-4 sm:text-base"
+                        style={{ backgroundColor: '#66FFB2' }}
+                    >
+                        <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
+                        </svg>
+                        <span>Join Our Event</span>
+                    </a>
+                </div>
 
                 <footer className="mt-16 text-sm text-white/60">© 2025 Cashvertz. All rights reserved.</footer>
             </main>
@@ -322,7 +344,7 @@ const ComingSoon = () => {
         }
         
         .email-form input:focus {
-            background: transparent;
+            background: rgba(255, 255, 255, 0.05);
         }
         
         /* Button hover effects */
