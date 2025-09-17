@@ -39,10 +39,10 @@ const AnimatedCounter = ({ value, label }: { value: number; label: string }) => 
 
     return (
         <div className="countdown-card rounded-lg px-3 py-3 sm:rounded-xl sm:px-6 sm:py-4 relative">
-            <div className="relative h-12 flex items-center justify-center overflow-hidden sm:h-16">
+            <div className="relative h-14 flex items-center justify-center overflow-hidden sm:h-20">
                 {/* Current number sliding out */}
                 <div
-                    className={`absolute text-2xl font-black sm:text-3xl md:text-4xl lg:text-5xl transition-all duration-1000 ease-in-out ${isAnimating ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
+                    className={`absolute text-3xl font-black sm:text-4xl md:text-5xl lg:text-6xl transition-all duration-1000 ease-in-out ${isAnimating ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'
                         }`}
                     style={{ color: '#66FFB2' }}
                 >
@@ -51,14 +51,14 @@ const AnimatedCounter = ({ value, label }: { value: number; label: string }) => 
 
                 {/* Next number sliding in */}
                 <div
-                    className={`absolute text-2xl font-black sm:text-3xl md:text-4xl lg:text-5xl transition-all duration-1000 ease-in-out ${isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
+                    className={`absolute text-3xl font-black sm:text-4xl md:text-5xl lg:text-6xl transition-all duration-1000 ease-in-out ${isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
                         }`}
                     style={{ color: '#66FFB2' }}
                 >
                     {formatNumber(nextValue)}
                 </div>
             </div>
-            <div className="mt-1 text-xs font-medium text-white/70 tracking-wider uppercase sm:text-sm">
+            <div className="mt-2 text-sm font-medium text-white/70 tracking-wider uppercase sm:text-base">
                 {label}
             </div>
         </div>
@@ -140,8 +140,8 @@ const ComingSoon = () => {
                 <div className="flex items-center">
                     <img src={logo} alt="CashVertz" className="h-16 w-auto object-cover" />
                 </div>
-                <nav className="flex items-center gap-6 text-sm font-medium text-white/80">
-                    <a className="hover:text-white transition-colors duration-200" href="#about">About Us</a>
+                <nav className="flex items-center gap-4 sm:gap-6 text-xs sm:text-sm font-medium text-white/80">
+                    <a className="hover:text-white transition-colors duration-200 whitespace-nowrap" href="#about">About Us</a>
                     <div className="flex items-center gap-4">
                         {/* social icons */}
                         <a aria-label="Instagram" className="social-icon hover:text-white" href="https://www.instagram.com/cashvertz">
@@ -158,10 +158,10 @@ const ComingSoon = () => {
             </header>
 
             <main className="mx-auto flex w-full max-w-6xl flex-col items-center px-4 pb-16 sm:px-6 sm:pb-24 text-center">
-                <h1 className="mt-4 text-3xl font-bold tracking-tight sm:mt-6 sm:text-4xl md:mt-10 md:text-5xl lg:text-6xl xl:text-7xl" style={{ color: '#66FFB2' }}>
+                <h1 className="mt-4 text-4xl font-bold tracking-tight sm:mt-6 sm:text-5xl md:mt-10 md:text-6xl lg:text-7xl xl:text-8xl" style={{ color: '#66FFB2' }}>
                     We're Still Cooking
                 </h1>
-                <h2 className="mb-6 text-3xl font-bold tracking-tight sm:mb-8 sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl" style={{ color: '#66FFB2' }}>
+                <h2 className="mb-6 text-4xl font-bold tracking-tight sm:mb-8 sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl" style={{ color: '#66FFB2' }}>
                     Our Website...
                 </h2>
                 <p className="mx-auto max-w-2xl px-4 text-base font-light text-white/90 sm:px-0 sm:text-lg md:text-xl leading-relaxed">
@@ -169,7 +169,7 @@ const ComingSoon = () => {
                     revolution in <span className="underline font-medium" style={{ color: '#66FFB2' }}>cashback shopping</span>.
                 </p>
 
-                <div className="mt-12 grid grid-cols-2 gap-4 sm:mt-16 sm:grid-cols-4 sm:gap-6 md:gap-8">
+                <div className="mt-12 grid grid-cols-2 gap-5 sm:mt-16 sm:grid-cols-4 sm:gap-7 md:gap-9">
                     {([
                         { label: 'Days', value: timeLeft.days },
                         { label: 'Hours', value: timeLeft.hours },
@@ -181,19 +181,19 @@ const ComingSoon = () => {
                 </div>
 
                 <div className="mt-12 w-full max-w-2xl px-4 sm:mt-16 sm:px-0">
-                    <form onSubmit={onSubmit} className="email-form flex items-stretch overflow-hidden rounded-full">
+                    <form onSubmit={onSubmit} className="email-form flex items-center rounded-full overflow-visible gap-2 p-1 h-14">
                         <input
                             type="email"
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="Enter your email here"
-                            className="flex-1 bg-transparent px-4 py-3 text-white placeholder:text-white/50 focus:outline-none text-sm sm:px-6 sm:py-4 sm:text-base"
+                            className="flex-1 bg-transparent h-full px-4 text-white placeholder:text-white/50 focus:outline-none text-sm sm:text-base rounded-full"
                         />
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="group flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-black hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed sm:gap-3 sm:px-8 sm:py-4 sm:text-base"
+                            className="group flex items-center gap-2 rounded-full px-5 h-full text-sm font-semibold text-black hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed sm:gap-3 sm:px-7 sm:text-base shrink-0 whitespace-nowrap min-w-[112px]"
                             style={{ backgroundColor: '#66FFB2' }}
                         >
                             {isLoading ? (
@@ -322,7 +322,7 @@ const ComingSoon = () => {
         }
         
         .email-form input:focus {
-            background: rgba(255, 255, 255, 0.05);
+            background: transparent;
         }
         
         /* Button hover effects */
