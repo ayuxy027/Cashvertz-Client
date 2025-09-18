@@ -56,6 +56,10 @@ export interface UserSelection {
 export interface LocationWithItems {
   id: number
   name: string
+  area_name?: string
+  house_no?: string
+  apartment?: string
+  receiver_mobile?: string
   outlets: Array<{
     id: number
     name: string
@@ -102,9 +106,13 @@ export class SupabaseService {
       }
 
       // Map to expected shape with a synthesized human-readable name
-      return (locations || []).map((loc: { id: number; area_name: string; outlets?: Array<{ id: number; name: string; items?: Array<any> }>; }) => ({
+      return (locations || []).map((loc: { id: number; area_name: string; house_no?: string; apartment?: string; receiver_mobile?: string; outlets?: Array<{ id: number; name: string; items?: Array<any> }>; }) => ({
         id: loc.id,
         name: `${loc.area_name}`,
+        area_name: loc.area_name,
+        house_no: loc.house_no,
+        apartment: loc.apartment,
+        receiver_mobile: loc.receiver_mobile,
         outlets: (loc.outlets || []).map((o: { id: number; name: string; items?: Array<any> }) => ({
           id: o.id,
           name: o.name,
@@ -160,6 +168,10 @@ export class SupabaseService {
       return {
         id: location.id,
         name: `${location.area_name}`,
+        area_name: location.area_name,
+        house_no: location.house_no,
+        apartment: location.apartment,
+        receiver_mobile: location.receiver_mobile,
         outlets: (location.outlets || []).map((o: { id: number; name: string; items?: Array<{ id: number; name: string; available_quantity: number; no_of_users: number; per_order_quantity: number; }>; }) => ({
           id: o.id,
           name: o.name,
@@ -218,6 +230,10 @@ export class SupabaseService {
   // Get user's previous selection with location, outlet, and item names
   static async getUserSelection(mobileNumber: string): Promise<{
     location_name?: string;
+    area_name?: string;
+    house_no?: string;
+    apartment?: string;
+    receiver_mobile?: string;
     outlet_name?: string;
     item_name?: string;
   } | null> {
@@ -226,7 +242,7 @@ export class SupabaseService {
         .from('user_selections')
         .select(`
           *,
-          locations!inner(area_name),
+          locations!inner(area_name, house_no, apartment, receiver_mobile),
           outlets!inner(name),
           items!inner(name)
         `)
@@ -245,6 +261,10 @@ export class SupabaseService {
       return {
         ...data,
         location_name: data.locations?.area_name,
+        area_name: data.locations?.area_name,
+        house_no: data.locations?.house_no,
+        apartment: data.locations?.apartment,
+        receiver_mobile: data.locations?.receiver_mobile,
         outlet_name: data.outlets?.name,
         item_name: data.items?.name
       }

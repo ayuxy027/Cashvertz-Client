@@ -20,6 +20,10 @@ const EventsPage = () => {
     const [loading, setLoading] = useState(true)
     const [userSelection, setUserSelection] = useState<{
         location_name?: string;
+        area_name?: string;
+        house_no?: string;
+        apartment?: string;
+        receiver_mobile?: string;
         outlet_name?: string;
         item_name?: string;
     } | null>(null)
@@ -619,7 +623,15 @@ const EventsPage = () => {
                             </div>
                             <div className="mb-3">
                                 <p className="text-white/80 text-sm">📍 Location:</p>
-                                <p className="text-white/90">{userSelection.location_name || 'Location not found'}</p>
+                                <p className="text-white/90">{userSelection.area_name || userSelection.location_name || 'Location not found'}</p>
+                            </div>
+                            <div className="mb-3">
+                                <p className="text-white/80 text-sm">🏠 Apartment / House No:</p>
+                                <p className="text-white/90">{userSelection.apartment ? `${userSelection.apartment}${userSelection.house_no ? `, ${userSelection.house_no}` : ''}` : (userSelection.house_no || '—')}</p>
+                            </div>
+                            <div className="mb-3">
+                                <p className="text-white/80 text-sm">📞 Receiver Mobile:</p>
+                                <p className="text-white/90">{userSelection.receiver_mobile || '—'}</p>
                             </div>
                             <div className="mb-3">
                                 <p className="text-white/80 text-sm">🏪 Outlet:</p>
