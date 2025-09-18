@@ -2,137 +2,100 @@ import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from '../assets/logo-light.png'
 import bgSvg from '../assets/bg.svg'
+import { supabase, Zone, Outlet, UserSelection } from '../lib/supabase'
 
-type Step = 'mobile' | 'outlets' | 'upload' | 'completion'
+type Step = 'mobile' | 'zones' | 'outlets' | 'upload' | 'completion'
 
 const EventsPage = () => {
     const navigate = useNavigate()
     const [step, setStep] = useState<Step>('mobile')
     const [mobileNumber, setMobileNumber] = useState('')
+    const [userName, setUserName] = useState('')
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
-    const [selectedItem, setSelectedItem] = useState('')
-    const [selectedPerOrderQty, setSelectedPerOrderQty] = useState<number>(1)
-    const [agreedPerOrderQty, setAgreedPerOrderQty] = useState<boolean>(false)
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [isUploading, setIsUploading] = useState(false)
-    type UIItem = { id: number; name: string; available_quantity: number; per_order_quantity?: number }
-    type UIOutlet = { id: number; name: string; items: UIItem[] }
-    type UILocation = { id: number; name: string; outlets: UIOutlet[] }
 
-    const [locations, setLocations] = useState<UILocation[]>([])
+    // Zone-based state
+    const [zones, setZones] = useState<Zone[]>([])
+    const [selectedZone, setSelectedZone] = useState<Zone | null>(null)
+    const [assignedOutlet, setAssignedOutlet] = useState<Outlet | null>(null)
     const [loading, setLoading] = useState(true)
-    const [userSelection, setUserSelection] = useState<{
-        location_name?: string;
-        area_name?: string;
-        house_no?: string;
-        apartment?: string;
-        receiver_mobile?: string;
-        outlet_name?: string;
-        item_name?: string;
-    } | null>(null)
+    const [userSelection, setUserSelection] = useState<UserSelection | null>(null)
     const [loadingSelection, setLoadingSelection] = useState(true)
 
-    // UI-only: no global context
-
-    const [selectedAddress, setSelectedAddress] = useState('')
-    const [currentLocationIndex, setCurrentLocationIndex] = useState(0)
-
-    // UI-only: seed static mock locations
+    // Load zones from Supabase and restore session
     useEffect(() => {
-        setLoading(true)
-        const mockLocations = [
-            {
-                id: 1,
-                name: 'Downtown Plaza',
-                outlets: [
-                    {
-                        id: 11,
-                        name: 'Cafe Bliss',
-                        items: [
-                            { id: 111, name: 'Coffee Voucher', available_quantity: 12, per_order_quantity: 1 },
-                            { id: 112, name: 'Dessert Combo', available_quantity: 0, per_order_quantity: 2 },
-                        ],
-                    },
-                    {
-                        id: 12,
-                        name: 'Tech Hub',
-                        items: [
-                            { id: 121, name: 'USB-C Cable', available_quantity: 7, per_order_quantity: 1 },
-                            { id: 122, name: 'Phone Stand', available_quantity: 4, per_order_quantity: 1 },
-                        ],
-                    },
-                ],
-            },
-            {
-                id: 2,
-                name: 'Riverside Market',
-                outlets: [
-                    {
-                        id: 21,
-                        name: 'Book Nook',
-                        items: [
-                            { id: 211, name: 'Paperback Novel', available_quantity: 9, per_order_quantity: 1 },
-                            { id: 212, name: 'Journal Set', available_quantity: 2, per_order_quantity: 1 },
-                        ],
-                    },
-                ],
-            },
-        ]
-        setLocations(mockLocations)
-        setLoading(false)
-    }, [])
+        const initializeApp = async () => {
+            try {
+                setLoading(true)
 
-    // UI-only: simulate loading user selection
-    useEffect(() => {
-        if (mobileNumber && step === 'upload') {
-            setLoadingSelection(true)
-            setTimeout(() => {
-                const prev = localStorage.getItem('selectedItem')
-                if (prev) {
-                    setUserSelection({
-                        location_name: selectedAddress,
-                        area_name: selectedAddress,
-                        outlet_name: prev.split('(')[1]?.replace(')', '') || 'Outlet',
-                        item_name: prev.split('(')[0].trim(),
-                    } as any)
+                // Load zones from Supabase
+                const { data, error } = await supabase
+                    .from('zones')
+                    .select('*')
+                    .eq('is_active', true)
+                    .order('id')
+
+                if (error) {
+                    throw error
                 }
-                setLoadingSelection(false)
-            }, 400)
-        }
-    }, [mobileNumber, step, selectedAddress])
+                setZones(data || [])
 
-    // Clear old placeholder data on component mount
-    useEffect(() => {
-        const storedAddress = localStorage.getItem('selectedAddress')
-        const storedItem = localStorage.getItem('selectedItem')
+                // Restore session from localStorage
+                const savedMobile = localStorage.getItem('mobileNumber')
+                const savedUserName = localStorage.getItem('userName')
+                const savedStep = localStorage.getItem('currentStep')
+                const savedZone = localStorage.getItem('selectedZone')
+                const savedOutlet = localStorage.getItem('assignedOutlet')
 
-        // Clear old placeholder data
-        if (storedAddress && (storedAddress.includes('Park Avenue') || storedAddress.includes('Main Street') || storedAddress.includes('Beach Road') || storedAddress.includes('Garden Street'))) {
-            localStorage.removeItem('selectedAddress')
+                if (savedMobile) {
+                    setMobileNumber(savedMobile)
+                    if (savedUserName) {
+                        setUserName(savedUserName)
+                    }
+
+                    if (savedStep && savedStep !== 'mobile') {
+                        setStep(savedStep as Step)
+
+                        if (savedZone) {
+                            const zoneData = JSON.parse(savedZone)
+                            setSelectedZone(zoneData)
+                        }
+
+                        if (savedOutlet) {
+                            const outletData = JSON.parse(savedOutlet)
+                            setAssignedOutlet(outletData)
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error initializing app:', error)
+                setError('Failed to load data. Please try again.')
+            } finally {
+                setLoading(false)
+            }
         }
 
-        if (storedItem && (storedItem.includes('Jeans') || storedItem.includes('Pizza') || storedItem.includes('Phone') || storedItem.includes('Novel'))) {
-            localStorage.removeItem('selectedItem')
-        }
+        initializeApp()
     }, [])
 
+    // Load user selection from localStorage
     useEffect(() => {
-        // Randomly assign an address when outlets step loads
-        if (step === 'outlets' && !selectedAddress && locations.length > 0) {
-            const randomIndex = Math.floor(Math.random() * locations.length)
-            setCurrentLocationIndex(randomIndex)
-            setSelectedAddress(locations[randomIndex].name)
+        if (step === 'upload') {
+            const savedSelection = localStorage.getItem('userSelection')
+            if (savedSelection) {
+                try {
+                    const selectionData = JSON.parse(savedSelection)
+                    setUserSelection(selectionData)
+                } catch (error) {
+                    console.error('Error parsing saved selection:', error)
+                }
+            }
+            setLoadingSelection(false)
         }
-    }, [step, selectedAddress, locations])
+    }, [step])
 
-    // Update selected address when location index changes
-    useEffect(() => {
-        if (step === 'outlets' && locations.length > 0) {
-            setSelectedAddress(locations[currentLocationIndex].name)
-            setSelectedItem('') // Clear selected item when switching locations
-        }
-    }, [currentLocationIndex, step, locations])
 
     const validateMobileNumber = useCallback((number: string): boolean => {
         return /^\d{10}$/.test(number.replace(/\D/g, ''))
@@ -149,77 +112,105 @@ const EventsPage = () => {
                 return
             }
 
-            // UI-only: proceed to outlets directly
-            setStep('outlets')
+            // Save to localStorage
+            localStorage.setItem('mobileNumber', mobileNumber)
+            localStorage.setItem('userName', userName)
+            localStorage.setItem('currentStep', 'zones')
+
+            // Proceed to zone selection
+            setStep('zones')
         } catch (error) {
             console.error('Error:', error)
             setError('Something went wrong. Please try again.')
         } finally {
             setIsLoading(false)
         }
-    }, [mobileNumber, validateMobileNumber])
+    }, [mobileNumber, userName, validateMobileNumber])
 
     // Check if user came from landing page with mobile number
     useEffect(() => {
         const storedMobileNumber = localStorage.getItem('userMobileNumber')
         if (storedMobileNumber) {
             setMobileNumber(storedMobileNumber)
-            setStep('outlets')
+            setStep('zones')
             localStorage.removeItem('userMobileNumber')
         }
     }, [])
 
-    const handleItemSelect = (item: { id: number; name: string; available_quantity: number; outlet: string; per_order_quantity?: number }) => {
-        if (item.available_quantity > 0) {
-            setSelectedItem(`${item.name} (${item.outlet})`)
-            setSelectedPerOrderQty(item.per_order_quantity ?? 1)
-            setAgreedPerOrderQty(false)
-        }
-    }
+    // Handle zone selection and random outlet assignment
+    const handleZoneSelect = async (zone: Zone) => {
+        try {
+            setIsLoading(true)
+            setError('')
 
-    const toggleLocation = (direction: 'prev' | 'next') => {
-        if (direction === 'prev') {
-            setCurrentLocationIndex(prev => prev === 0 ? locations.length - 1 : prev - 1)
-        } else {
-            setCurrentLocationIndex(prev => prev === locations.length - 1 ? 0 : prev + 1)
+            // Get outlets for the selected zone from Supabase
+            const { data: outlets, error: outletsError } = await supabase
+                .from('outlets')
+                .select('*')
+                .eq('zone_id', zone.id)
+                .eq('is_active', true)
+
+            if (outletsError) {
+                throw outletsError
+            }
+
+            if (!outlets || outlets.length === 0) {
+                setError('No outlets available in this zone. Please try another zone.')
+                return
+            }
+
+            // Randomly assign an outlet for load balancing
+            const randomIndex = Math.floor(Math.random() * outlets.length)
+            const assignedOutlet = outlets[randomIndex]
+
+            // Save to localStorage
+            localStorage.setItem('selectedZone', JSON.stringify(zone))
+            localStorage.setItem('assignedOutlet', JSON.stringify(assignedOutlet))
+            localStorage.setItem('currentStep', 'outlets')
+
+            setSelectedZone(zone)
+            setAssignedOutlet(assignedOutlet)
+            setStep('outlets')
+        } catch (error) {
+            console.error('Error selecting zone:', error)
+            setError('Failed to load outlets. Please try again.')
+        } finally {
+            setIsLoading(false)
         }
     }
 
     const handleProceedToUpload = async () => {
-        if (!selectedItem) {
-            alert('Please select an item to proceed')
+        if (!assignedOutlet || !selectedZone) {
+            alert('Please select a zone first')
             return
         }
 
         try {
-            // Find the selected item details
-            const currentLocation = locations[currentLocationIndex]
-            let selectedItemDetails = null
-            let selectedOutlet = null
+            // Save user selection to Supabase
+            const { data, error } = await supabase
+                .from('user_selections')
+                .insert({
+                    mobile_number: mobileNumber,
+                    user_name: userName,
+                    zone_id: selectedZone.id,
+                    outlet_id: assignedOutlet.id,
+                    status: 'pending_screenshot'
+                })
+                .select()
+                .single()
 
-            for (const outlet of currentLocation.outlets) {
-                const item = outlet.items.find(item => `${item.name} (${outlet.name})` === selectedItem)
-                if (item) {
-                    selectedItemDetails = item
-                    selectedOutlet = outlet
-                    break
-                }
+            if (error) {
+                throw error
             }
 
-            if (selectedItemDetails && selectedOutlet) {
-                // Enforce per-order quantity agreement on client before reserving
-                const perOrderQty = (selectedItemDetails as any).per_order_quantity || 1
-                if (perOrderQty > 1 && !agreedPerOrderQty) {
-                    alert(`This item requires ordering at least ${perOrderQty}. Please confirm before proceeding.`)
-                    return
-                }
-                // UI-only: store locally
-                localStorage.setItem('selectedItem', selectedItem)
-                localStorage.setItem('selectedAddress', selectedAddress)
-                setStep('upload')
-            }
+            // Save to localStorage
+            localStorage.setItem('currentStep', 'upload')
+            localStorage.setItem('userSelection', JSON.stringify(data))
+
+            setUserSelection(data)
+            setStep('upload')
         } catch (error) {
-            console.error('Error proceeding to upload:', error)
+            console.error('Error saving selection:', error)
             alert('Something went wrong. Please try again.')
         }
     }
@@ -266,8 +257,36 @@ const EventsPage = () => {
         setError('')
 
         try {
-            // UI-only: simulate upload
-            await new Promise((resolve) => setTimeout(resolve, 800))
+            // Upload file to Supabase storage
+            const fileExt = selectedFile.name.split('.').pop()
+            const fileName = `${mobileNumber}_${Date.now()}.${fileExt}`
+
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('screenshots')
+                .upload(fileName, selectedFile)
+
+            if (uploadError) {
+                throw uploadError
+            }
+
+            // Update user selection with screenshot URL and mark as completed
+            const { error: updateError } = await supabase
+                .from('user_selections')
+                .update({
+                    screenshot_url: uploadData.path,
+                    status: 'screenshot_uploaded',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('mobile_number', mobileNumber)
+
+            if (updateError) {
+                throw updateError
+            }
+
+            // Save completion to localStorage
+            localStorage.setItem('currentStep', 'completion')
+            localStorage.setItem('uploadCompleted', 'true')
+
             setStep('completion')
         } catch (error) {
             console.error('Upload error:', error)
@@ -279,11 +298,16 @@ const EventsPage = () => {
 
     // Function to clear all data (for debugging)
     const clearAllData = () => {
-        localStorage.removeItem('selectedAddress')
-        localStorage.removeItem('selectedItem')
-        localStorage.removeItem('registeredUsers')
-        localStorage.removeItem('userMobileNumber')
-        window.location.reload()
+        localStorage.clear()
+        // Reset all state without page reload
+        setMobileNumber('')
+        setUserName('')
+        setSelectedFile(null)
+        setUserSelection(null)
+        setSelectedZone(null)
+        setAssignedOutlet(null)
+        setError('')
+        setStep('mobile')
     }
 
     // No timeout cleanup necessary; DB handles expiry via scheduled function
@@ -291,23 +315,29 @@ const EventsPage = () => {
     // Function to clear session data and allow user to change choice
     const clearSessionAndRestart = async () => {
         try {
-            setIsLoading(true)
-            setError('')
+            // Clear Supabase data
+            if (mobileNumber) {
+                await supabase
+                    .from('user_selections')
+                    .delete()
+                    .eq('mobile_number', mobileNumber)
+            }
 
-            // UI-only: clear local storage and reset
-            localStorage.removeItem('selectedAddress')
-            localStorage.removeItem('selectedItem')
+            // Clear localStorage
+            localStorage.removeItem('selectedZone')
+            localStorage.removeItem('assignedOutlet')
+            localStorage.removeItem('userSelection')
+            localStorage.setItem('currentStep', 'zones')
 
-            setSelectedItem('')
+            // Reset state
             setSelectedFile(null)
             setUserSelection(null)
-            setCurrentLocationIndex(0)
-            setStep('outlets')
+            setSelectedZone(null)
+            setAssignedOutlet(null)
+            setStep('zones')
         } catch (error) {
             console.error('Error clearing session:', error)
             setError('Something went wrong. Please try again.')
-        } finally {
-            setIsLoading(false)
         }
     }
 
@@ -326,7 +356,15 @@ const EventsPage = () => {
             </div>
 
             <div className="max-w-md mx-auto mb-6">
-                <form onSubmit={handleMobileSubmit} className="mobile-form">
+                <form onSubmit={handleMobileSubmit} className="space-y-4">
+                    <input
+                        type="text"
+                        required
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        placeholder="Enter your name"
+                        className="w-full bg-transparent border border-white/20 rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-white/40 text-sm sm:text-base transition-colors"
+                    />
                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
                         <input
                             type="tel"
@@ -402,135 +440,104 @@ const EventsPage = () => {
         </div>
     )
 
-    const renderOutletsStep = () => {
+    const renderZonesStep = () => {
         if (loading) {
             return (
                 <div className="max-w-4xl mx-auto text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                    <p className="text-white/80">Loading locations...</p>
+                    <p className="text-white/80">Loading zones...</p>
                 </div>
             )
         }
 
-        if (locations.length === 0) {
+        if (zones.length === 0) {
             return (
                 <div className="max-w-4xl mx-auto text-center">
-                    <p className="text-white/80">No locations available. Please try again later.</p>
+                    <p className="text-white/80">No zones available. Please try again later.</p>
                 </div>
             )
         }
-
-        const currentLocation = locations[currentLocationIndex]
 
         return (
             <div className="max-w-4xl mx-auto">
                 <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl text-center mb-8" style={{ color: '#66FFB2' }}>
-                    Your Assigned Location
+                    Select Your Zone
+                </h1>
+
+                <p className="text-lg text-white/90 text-center mb-8 max-w-2xl mx-auto">
+                    Choose your preferred zone. We'll randomly assign you an outlet within that zone for load balancing.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                    {zones.map((zone) => (
+                        <button
+                            key={zone.id}
+                            onClick={() => handleZoneSelect(zone)}
+                            disabled={isLoading}
+                            className="zone-card p-6 rounded-lg text-left transition-all duration-200 bg-white/10 text-white/90 border border-white/20 hover:bg-white/20 hover:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-semibold text-white">{zone.name}</h3>
+                                <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <p className="text-white/80 text-sm">{zone.description}</p>
+                        </button>
+                    ))}
+                </div>
+
+                {error && (
+                    <div className="mt-6 text-center text-sm text-red-400">{error}</div>
+                )}
+            </div>
+        )
+    }
+
+    const renderOutletsStep = () => {
+        if (!assignedOutlet || !selectedZone) {
+            return (
+                <div className="max-w-4xl mx-auto text-center">
+                    <p className="text-white/80">No outlet assigned. Please go back and select a zone.</p>
+                </div>
+            )
+        }
+
+        return (
+            <div className="max-w-4xl mx-auto">
+                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl text-center mb-8" style={{ color: '#66FFB2' }}>
+                    Your Assigned Outlet
                 </h1>
 
                 <div className="max-w-2xl mx-auto">
                     <div className="address-card rounded-lg p-6 mb-8">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-xl font-semibold text-white">📍 Your Location</h2>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => toggleLocation('prev')}
-                                    className="toggle-btn px-3 py-1 rounded-full text-sm bg-white/10 hover:bg-white/20 transition-colors"
-                                >
-                                    ←
-                                </button>
-                                <button
-                                    onClick={() => toggleLocation('next')}
-                                    className="toggle-btn px-3 py-1 rounded-full text-sm bg-white/10 hover:bg-white/20 transition-colors"
-                                >
-                                    →
-                                </button>
-                            </div>
-                        </div>
-                        <p className="text-white/90 text-lg">{selectedAddress}</p>
+                        <h2 className="text-xl font-semibold text-white mb-4">📍 Your Assigned Outlet</h2>
+                        <p className="text-white/90 text-lg font-medium">{assignedOutlet.name}</p>
+                        <p className="text-white/80 text-sm mt-2">{assignedOutlet.address_line_1}</p>
+                        <p className="text-white/80 text-sm">{assignedOutlet.main_street}</p>
                         <p className="text-white/60 text-sm mt-2">
-                            Switch locations if items are out of stock
+                            Zone: {selectedZone.name}
                         </p>
                     </div>
 
-                    <div className="outlets-section">
-                        <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: '#66FFB2' }}>
-                            Available Items at Your Location
+                    <div className="text-center mb-8">
+                        <h2 className="text-2xl font-bold mb-4" style={{ color: '#66FFB2' }}>
+                            Next Steps
                         </h2>
-                        <p className="text-white/80 text-center mb-8">
-                            Select one item from the available options below
+                        <p className="text-white/80 text-lg mb-6">
+                            Visit your assigned outlet and place an order (max ₹100). Then upload a screenshot of your order to complete the process.
                         </p>
-
-                        {currentLocation && currentLocation.outlets.length > 0 ? (
-                            <div className="space-y-6">
-                                {currentLocation.outlets.map((outlet: UIOutlet, outletIndex: number) => (
-                                    <div key={outletIndex} className="outlet-card rounded-lg p-6">
-                                        <h3 className="text-xl font-semibold mb-4 text-white">{outlet.name}</h3>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            {outlet.items.map((item: UIItem, itemIndex: number) => {
-                                                const isSelected = selectedItem === `${item.name} (${outlet.name})`
-                                                const isAvailable = item.available_quantity > 0
-
-                                                return (
-                                                    <button
-                                                        key={itemIndex}
-                                                        onClick={() => handleItemSelect({ ...item, outlet: outlet.name })}
-                                                        disabled={!isAvailable}
-                                                        className={`item-button p-4 rounded-lg text-left transition-all duration-200 ${isSelected
-                                                            ? 'bg-green-500 text-white border-2 border-green-400'
-                                                            : isAvailable
-                                                                ? 'bg-white/10 text-white/90 border border-white/20 hover:bg-white/20'
-                                                                : 'bg-gray-600/20 text-gray-400 border border-gray-600/30 cursor-not-allowed'
-                                                            }`}
-                                                    >
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex-1">
-                                                                <div className="font-medium">{item.name}</div>
-                                                                <div className="text-sm opacity-75">{outlet.name}</div>
-                                                                {item.per_order_quantity && item.per_order_quantity > 1 && (
-                                                                    <div className="text-xs mt-1 text-blue-300">{item.per_order_quantity} per order</div>
-                                                                )}
-                                                                <div className={`text-xs mt-1 ${isSelected ? 'text-blue-300' : isAvailable ? 'text-green-300' : 'text-red-300'}`}>
-                                                                    {isSelected ? 'Selected' : isAvailable ? `${item.available_quantity} available` : 'Out of stock'}
-                                                                </div>
-                                                            </div>
-                                                            {isSelected && (
-                                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                                </svg>
-                                                            )}
-                                                        </div>
-                                                    </button>
-                                                )
-                                            })}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center text-white/60">
-                                <p>No items available at this location.</p>
-                            </div>
-                        )}
                     </div>
 
                     <div className="mt-8 text-center">
-                        {selectedPerOrderQty > 1 && (
-                            <div className="mb-4 text-sm text-white/90">
-                                This item requires ordering at least <span className="font-semibold" style={{ color: '#66FFB2' }}>{selectedPerOrderQty}</span> unit(s) in the app.
-                                <div className="mt-2 inline-flex items-center gap-2">
-                                    <input id="agree-min-qty" type="checkbox" className="accent-green-400" checked={agreedPerOrderQty} onChange={(e) => setAgreedPerOrderQty(e.target.checked)} />
-                                    <label htmlFor="agree-min-qty" className="select-none">I will order at least {selectedPerOrderQty} in the app</label>
-                                </div>
-                            </div>
-                        )}
                         <button
                             onClick={handleProceedToUpload}
-                            disabled={!selectedItem || (selectedPerOrderQty > 1 && !agreedPerOrderQty)}
-                            className="proceed-button px-8 py-4 rounded-full text-lg font-semibold text-black hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="proceed-button px-8 py-4 rounded-full text-lg font-semibold text-black hover:opacity-90 transition-all duration-200"
                             style={{ backgroundColor: '#66FFB2' }}
                         >
-                            Reserve Item & Upload Screenshot
+                            Proceed to Upload Screenshot
                         </button>
                     </div>
                 </div>
@@ -572,34 +579,30 @@ const EventsPage = () => {
                     <div className="max-w-2xl mx-auto mb-8">
                         <div className="info-card rounded-lg p-6 mb-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-xl font-semibold text-white">Your Previous Selection</h2>
+                                <h2 className="text-xl font-semibold text-white">Your Assignment</h2>
                                 <button
                                     onClick={clearSessionAndRestart}
-                                    disabled={isLoading}
-                                    className="text-sm text-blue-400 hover:text-blue-300 underline disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="text-sm text-blue-400 hover:text-blue-300 underline"
                                 >
-                                    {isLoading ? 'Changing...' : 'Change Choice'}
+                                    Change Choice
                                 </button>
                             </div>
                             <div className="mb-3">
-                                <p className="text-white/80 text-sm">📍 Location:</p>
-                                <p className="text-white/90">{userSelection.area_name || userSelection.location_name || 'Location not found'}</p>
-                            </div>
-                            <div className="mb-3">
-                                <p className="text-white/80 text-sm">🏠 Apartment / House No:</p>
-                                <p className="text-white/90">{userSelection.apartment ? `${userSelection.apartment}${userSelection.house_no ? `, ${userSelection.house_no}` : ''}` : (userSelection.house_no || '—')}</p>
-                            </div>
-                            <div className="mb-3">
-                                <p className="text-white/80 text-sm">📞 Receiver Mobile:</p>
-                                <p className="text-white/90">{userSelection.receiver_mobile || '—'}</p>
+                                <p className="text-white/80 text-sm">📍 Zone:</p>
+                                <p className="text-white/90">{selectedZone?.name || 'Zone not found'}</p>
                             </div>
                             <div className="mb-3">
                                 <p className="text-white/80 text-sm">🏪 Outlet:</p>
-                                <p className="text-white/90">{userSelection.outlet_name || 'Outlet not found'}</p>
+                                <p className="text-white/90">{assignedOutlet?.name || 'Outlet not found'}</p>
+                            </div>
+                            <div className="mb-3">
+                                <p className="text-white/80 text-sm">📍 Address:</p>
+                                <p className="text-white/90">{assignedOutlet?.address_line_1 || '—'}</p>
+                                <p className="text-white/90">{assignedOutlet?.main_street || '—'}</p>
                             </div>
                             <div>
-                                <p className="text-white/80 text-sm">🛍️ Selected Item:</p>
-                                <p className="text-white/90">{userSelection.item_name || 'Item not found'}</p>
+                                <p className="text-white/80 text-sm">💰 Max Order Amount:</p>
+                                <p className="text-white/90">₹100 (Test Mode)</p>
                             </div>
                         </div>
                     </div>
@@ -748,6 +751,7 @@ const EventsPage = () => {
             {/* Main content */}
             <main className="px-4 py-8 sm:px-6 sm:py-16">
                 {step === 'mobile' && renderMobileStep()}
+                {step === 'zones' && renderZonesStep()}
                 {step === 'outlets' && renderOutletsStep()}
                 {step === 'upload' && renderUploadStep()}
                 {step === 'completion' && renderCompletionStep()}
@@ -755,20 +759,6 @@ const EventsPage = () => {
 
             <style>{`
         /* Mobile-first glassmorphism */
-        .mobile-form {
-            background: rgba(255, 255, 255, 0.02);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-            border-radius: 9999px;
-            padding: 4px;
-            transition: all 0.3s ease;
-        }
-        
-        .mobile-form:focus-within {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-        }
         
         /* Feature cards */
         .feature-card {
@@ -781,6 +771,20 @@ const EventsPage = () => {
         }
         
         .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+        }
+        
+        /* Zone cards */
+        .zone-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        
+        .zone-card:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
         }
