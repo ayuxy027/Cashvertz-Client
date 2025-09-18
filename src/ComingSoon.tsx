@@ -4,8 +4,6 @@ import logo from './assets/logo-light.png'
 import percentImg from './assets/percentage.png'
 import coinImg from './assets/coin.png'
 import bgSvg from './assets/bg.svg'
-import { ValidationService } from './service/validationService'
-import { EmailService } from './service/emailService'
 
 type TimeLeft = {
     days: number
@@ -27,8 +25,6 @@ const AnimatedCounter = ({ value, label }: { value: number; label: string }) => 
         if (prevValueRef.current !== value) {
             setNextValue(value)
             setIsAnimating(true)
-
-            // Start the animation after a brief delay
             setTimeout(() => {
                 setCurrentValue(value)
                 setIsAnimating(false)
@@ -100,22 +96,14 @@ const ComingSoon = () => {
         setIsLoading(true)
 
         try {
-            // Validate email
-            const validation = ValidationService.validateEmail(email)
-            if (!validation.isValid) {
-                setError(validation.error || 'Invalid email address')
-                setIsLoading(false)
+            const isValid = /.+@.+\..+/.test(email.trim())
+            if (!isValid) {
+                setError('Please enter a valid email address')
                 return
             }
 
-            // Send notification email
-            const emailResult = await EmailService.sendNotification(email)
-            if (!emailResult.success) {
-                setError(emailResult.error || 'Failed to send email')
-                setIsLoading(false)
-                return
-            }
-
+            // UI-only: simulate success locally
+            await new Promise((resolve) => setTimeout(resolve, 600))
             setSubmitted(true)
             setEmail('')
         } catch (error) {

@@ -1,7 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAppContext } from '../context/AppContext'
-import { SupabaseService, LocationWithItems } from '../service/supabaseService'
 import logo from '../assets/logo-light.png'
 import bgSvg from '../assets/bg.svg'
 
@@ -18,7 +16,11 @@ const EventsPage = () => {
     const [agreedPerOrderQty, setAgreedPerOrderQty] = useState<boolean>(false)
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [isUploading, setIsUploading] = useState(false)
-    const [locations, setLocations] = useState<LocationWithItems[]>([])
+    type UIItem = { id: number; name: string; available_quantity: number; per_order_quantity?: number }
+    type UIOutlet = { id: number; name: string; items: UIItem[] }
+    type UILocation = { id: number; name: string; outlets: UIOutlet[] }
+
+    const [locations, setLocations] = useState<UILocation[]>([])
     const [loading, setLoading] = useState(true)
     const [userSelection, setUserSelection] = useState<{
         location_name?: string;
@@ -31,47 +33,74 @@ const EventsPage = () => {
     } | null>(null)
     const [loadingSelection, setLoadingSelection] = useState(true)
 
-    const { setMobileNumber: setContextMobileNumber, setIsReturningUser } = useAppContext()
+    // UI-only: no global context
 
     const [selectedAddress, setSelectedAddress] = useState('')
     const [currentLocationIndex, setCurrentLocationIndex] = useState(0)
 
-    // Load locations data from Supabase
+    // UI-only: seed static mock locations
     useEffect(() => {
-        const loadLocations = async () => {
-            try {
-                setLoading(true)
-                const locationsData = await SupabaseService.getLocationsWithItems()
-                setLocations(locationsData)
-            } catch (error) {
-                console.error('Error loading locations:', error)
-                setError('Failed to load locations. Please try again.')
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        loadLocations()
+        setLoading(true)
+        const mockLocations = [
+            {
+                id: 1,
+                name: 'Downtown Plaza',
+                outlets: [
+                    {
+                        id: 11,
+                        name: 'Cafe Bliss',
+                        items: [
+                            { id: 111, name: 'Coffee Voucher', available_quantity: 12, per_order_quantity: 1 },
+                            { id: 112, name: 'Dessert Combo', available_quantity: 0, per_order_quantity: 2 },
+                        ],
+                    },
+                    {
+                        id: 12,
+                        name: 'Tech Hub',
+                        items: [
+                            { id: 121, name: 'USB-C Cable', available_quantity: 7, per_order_quantity: 1 },
+                            { id: 122, name: 'Phone Stand', available_quantity: 4, per_order_quantity: 1 },
+                        ],
+                    },
+                ],
+            },
+            {
+                id: 2,
+                name: 'Riverside Market',
+                outlets: [
+                    {
+                        id: 21,
+                        name: 'Book Nook',
+                        items: [
+                            { id: 211, name: 'Paperback Novel', available_quantity: 9, per_order_quantity: 1 },
+                            { id: 212, name: 'Journal Set', available_quantity: 2, per_order_quantity: 1 },
+                        ],
+                    },
+                ],
+            },
+        ]
+        setLocations(mockLocations)
+        setLoading(false)
     }, [])
 
-    // Load user selection when mobile number changes and we're on upload step
+    // UI-only: simulate loading user selection
     useEffect(() => {
-        const loadUserSelection = async () => {
-            if (mobileNumber && step === 'upload') {
-                try {
-                    setLoadingSelection(true)
-                    const selection = await SupabaseService.getUserSelection(mobileNumber)
-                    setUserSelection(selection)
-                } catch (error) {
-                    console.error('Error loading user selection:', error)
-                } finally {
-                    setLoadingSelection(false)
+        if (mobileNumber && step === 'upload') {
+            setLoadingSelection(true)
+            setTimeout(() => {
+                const prev = localStorage.getItem('selectedItem')
+                if (prev) {
+                    setUserSelection({
+                        location_name: selectedAddress,
+                        area_name: selectedAddress,
+                        outlet_name: prev.split('(')[1]?.replace(')', '') || 'Outlet',
+                        item_name: prev.split('(')[0].trim(),
+                    } as any)
                 }
-            }
+                setLoadingSelection(false)
+            }, 400)
         }
-
-        loadUserSelection()
-    }, [mobileNumber, step])
+    }, [mobileNumber, step, selectedAddress])
 
     // Clear old placeholder data on component mount
     useEffect(() => {
@@ -120,85 +149,25 @@ const EventsPage = () => {
                 return
             }
 
-            // Check if user has already completed an order
-            const hasCompleted = await SupabaseService.hasCompletedOrder(mobileNumber)
-            if (hasCompleted) {
-                setError('This mobile number has already completed an order. Each number can only participate once.')
-                return
-            }
-
-            // Check if user is returning using Supabase
-            const isReturning = await SupabaseService.isReturningUser(mobileNumber)
-
-            if (isReturning) {
-                setIsReturningUser(true)
-                setContextMobileNumber(mobileNumber)
-                // For returning users, check if they already completed the outlet selection
-                const userSelection = await SupabaseService.getUserSelection(mobileNumber)
-                if (userSelection) {
-                    setStep('upload')
-                } else {
-                    setStep('outlets')
-                }
-            } else {
-                setIsReturningUser(false)
-                setContextMobileNumber(mobileNumber)
-                setStep('outlets')
-            }
+            // UI-only: proceed to outlets directly
+            setStep('outlets')
         } catch (error) {
             console.error('Error:', error)
             setError('Something went wrong. Please try again.')
         } finally {
             setIsLoading(false)
         }
-    }, [mobileNumber, validateMobileNumber, setIsReturningUser, setContextMobileNumber])
+    }, [mobileNumber, validateMobileNumber])
 
     // Check if user came from landing page with mobile number
     useEffect(() => {
         const storedMobileNumber = localStorage.getItem('userMobileNumber')
         if (storedMobileNumber) {
             setMobileNumber(storedMobileNumber)
-            setContextMobileNumber(storedMobileNumber)
-
-            // Check if this is a returning user using Supabase
-            const checkReturningUser = async () => {
-                try {
-                    // Check if user has already completed an order
-                    const hasCompleted = await SupabaseService.hasCompletedOrder(storedMobileNumber)
-                    if (hasCompleted) {
-                        setError('This mobile number has already completed an order. Each number can only participate once.')
-                        return
-                    }
-
-                    const isReturning = await SupabaseService.isReturningUser(storedMobileNumber)
-
-                    if (isReturning) {
-                        setIsReturningUser(true)
-                        // For returning users, check if they already completed the outlet selection
-                        const userSelection = await SupabaseService.getUserSelection(storedMobileNumber)
-                        if (userSelection) {
-                            setStep('upload')
-                        } else {
-                            setStep('outlets')
-                        }
-                    } else {
-                        setIsReturningUser(false)
-                        setStep('outlets')
-                    }
-                } catch (error) {
-                    console.error('Error checking returning user:', error)
-                    // Fallback to outlets step
-                    setIsReturningUser(false)
-                    setStep('outlets')
-                }
-            }
-
-            checkReturningUser()
-
-            // Clear the stored mobile number
+            setStep('outlets')
             localStorage.removeItem('userMobileNumber')
         }
-    }, [setContextMobileNumber, setIsReturningUser])
+    }, [])
 
     const handleItemSelect = (item: { id: number; name: string; available_quantity: number; outlet: string; per_order_quantity?: number }) => {
         if (item.available_quantity > 0) {
@@ -244,24 +213,10 @@ const EventsPage = () => {
                     alert(`This item requires ordering at least ${perOrderQty}. Please confirm before proceeding.`)
                     return
                 }
-                // CHECKPOINT: Reserve via DB trigger by inserting pending selection
-                const success = await SupabaseService.saveUserSelection(
-                    mobileNumber,
-                    currentLocation.id,
-                    selectedOutlet.id,
-                    selectedItemDetails.id
-                )
-
-                if (success) {
-                    // Store locally for display
-                    localStorage.setItem('selectedItem', selectedItem)
-                    localStorage.setItem('selectedAddress', selectedAddress)
-
-                    // Go directly to upload step
-                    setStep('upload')
-                } else {
-                    alert('Failed to save selection. Please try again.')
-                }
+                // UI-only: store locally
+                localStorage.setItem('selectedItem', selectedItem)
+                localStorage.setItem('selectedAddress', selectedAddress)
+                setStep('upload')
             }
         } catch (error) {
             console.error('Error proceeding to upload:', error)
@@ -311,16 +266,9 @@ const EventsPage = () => {
         setError('')
 
         try {
-            // Upload screenshot to Supabase Storage
-            const uploadSuccess = await SupabaseService.uploadScreenshot(selectedFile, mobileNumber)
-
-            if (uploadSuccess) {
-                // Mark user selection as completed in Supabase
-                await SupabaseService.markSelectionCompleted(mobileNumber)
-                setStep('completion')
-            } else {
-                setError('Upload failed. Please try again.')
-            }
+            // UI-only: simulate upload
+            await new Promise((resolve) => setTimeout(resolve, 800))
+            setStep('completion')
         } catch (error) {
             console.error('Upload error:', error)
             setError('Upload failed. Please try again.')
@@ -346,25 +294,15 @@ const EventsPage = () => {
             setIsLoading(true)
             setError('')
 
-            // Clear incomplete session from database
-            const success = await SupabaseService.clearIncompleteSession(mobileNumber)
+            // UI-only: clear local storage and reset
+            localStorage.removeItem('selectedAddress')
+            localStorage.removeItem('selectedItem')
 
-            if (success) {
-                // Clear local storage
-                localStorage.removeItem('selectedAddress')
-                localStorage.removeItem('selectedItem')
-
-                // Reset state
-                setSelectedItem('')
-                setSelectedFile(null)
-                setUserSelection(null)
-                setCurrentLocationIndex(0)
-
-                // Go back to outlets step
-                setStep('outlets')
-            } else {
-                setError('Failed to clear session. Please try again.')
-            }
+            setSelectedItem('')
+            setSelectedFile(null)
+            setUserSelection(null)
+            setCurrentLocationIndex(0)
+            setStep('outlets')
         } catch (error) {
             console.error('Error clearing session:', error)
             setError('Something went wrong. Please try again.')
@@ -525,11 +463,11 @@ const EventsPage = () => {
 
                         {currentLocation && currentLocation.outlets.length > 0 ? (
                             <div className="space-y-6">
-                                {currentLocation.outlets.map((outlet, outletIndex) => (
+                                {currentLocation.outlets.map((outlet: UIOutlet, outletIndex: number) => (
                                     <div key={outletIndex} className="outlet-card rounded-lg p-6">
                                         <h3 className="text-xl font-semibold mb-4 text-white">{outlet.name}</h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                            {outlet.items.map((item, itemIndex) => {
+                                            {outlet.items.map((item: UIItem, itemIndex: number) => {
                                                 const isSelected = selectedItem === `${item.name} (${outlet.name})`
                                                 const isAvailable = item.available_quantity > 0
 
