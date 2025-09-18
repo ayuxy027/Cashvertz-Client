@@ -102,13 +102,13 @@ export class SupabaseService {
       }
 
       // Map to expected shape with a synthesized human-readable name
-      return (locations || []).map((loc: any) => ({
+      return (locations || []).map((loc: { id: number; area_name: string; outlets?: Array<{ id: number; name: string; items?: Array<any> }>; }) => ({
         id: loc.id,
         name: `${loc.area_name}`,
-        outlets: (loc.outlets || []).map((o: any) => ({
+        outlets: (loc.outlets || []).map((o: { id: number; name: string; items?: Array<any> }) => ({
           id: o.id,
           name: o.name,
-          items: (o.items || []).map((it: any) => ({
+          items: (o.items || []).map((it: { id: number; name: string; available_quantity: number; no_of_users: number; per_order_quantity: number; }) => ({
             id: it.id,
             name: it.name,
             available_quantity: it.available_quantity,
@@ -154,14 +154,16 @@ export class SupabaseService {
         return null
       }
 
-      if (!location) return null
+      if (!location) {
+        return null
+      }
       return {
         id: location.id,
         name: `${location.area_name}`,
-        outlets: (location.outlets || []).map((o: any) => ({
+        outlets: (location.outlets || []).map((o: { id: number; name: string; items?: Array<{ id: number; name: string; available_quantity: number; no_of_users: number; per_order_quantity: number; }>; }) => ({
           id: o.id,
           name: o.name,
-          items: (o.items || []).map((it: any) => ({
+          items: (o.items || []).map((it: { id: number; name: string; available_quantity: number; no_of_users: number; per_order_quantity: number; }) => ({
             id: it.id,
             name: it.name,
             available_quantity: it.available_quantity,
@@ -274,7 +276,7 @@ export class SupabaseService {
   }
 
   // Restore item quantity if user abandons upload (timeout mechanism)
-  static async restoreItemQuantity(itemId: number, quantityToRestore: number): Promise<boolean> {
+  static async restoreItemQuantity(itemId: number, _quantityToRestore: number): Promise<boolean> {
     try {
       // With new schema, stock is managed via triggers on user_selections.
       // To restore, expire any pending reservations for this item
