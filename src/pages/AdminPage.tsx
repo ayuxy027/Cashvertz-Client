@@ -13,7 +13,7 @@ interface UserSelection {
     screenshot_url?: string;
     screenshot_uploaded_at?: string;
     selected_at: string;
-    is_completed: boolean;
+    status: 'pending' | 'completed' | 'expired';
 }
 
 interface AdminStats {
@@ -31,7 +31,7 @@ const AdminPage = () => {
     const [stats, setStats] = useState<AdminStats | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
-    const [filter, setFilter] = useState<'all' | 'completed' | 'pending'>('all')
+    const [filter, setFilter] = useState<'all' | 'completed' | 'pending' | 'expired'>('all')
 
     useEffect(() => {
         loadData()
@@ -58,12 +58,9 @@ const AdminPage = () => {
     }
 
     const filteredSelections = selections.filter(selection => {
-        if (filter === 'completed') {
-            return selection.is_completed
-        }
-        if (filter === 'pending') {
-            return !selection.is_completed
-        }
+        if (filter === 'completed') return selection.status === 'completed'
+        if (filter === 'pending') return selection.status === 'pending'
+        if (filter === 'expired') return selection.status === 'expired'
         return true
     })
 
@@ -208,7 +205,7 @@ const AdminPage = () => {
                             : 'bg-white/10 text-white/80 hover:bg-white/20'
                             }`}
                     >
-                        Completed ({selections.filter(s => s.is_completed).length})
+                        Completed ({selections.filter(s => s.status === 'completed').length})
                     </button>
                     <button
                         onClick={() => setFilter('pending')}
@@ -217,7 +214,16 @@ const AdminPage = () => {
                             : 'bg-white/10 text-white/80 hover:bg-white/20'
                             }`}
                     >
-                        Pending ({selections.filter(s => !s.is_completed).length})
+                        Pending ({selections.filter(s => s.status === 'pending').length})
+                    </button>
+                    <button
+                        onClick={() => setFilter('expired')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'expired'
+                            ? 'bg-green-500 text-black'
+                            : 'bg-white/10 text-white/80 hover:bg-white/20'
+                            }`}
+                    >
+                        Expired ({selections.filter(s => s.status === 'expired').length})
                     </button>
                 </div>
 
@@ -252,11 +258,9 @@ const AdminPage = () => {
                                             {selection.item_name}
                                         </td>
                                         <td className="px-4 py-3">
-                                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${selection.is_completed
-                                                ? 'bg-green-500/20 text-green-400'
-                                                : 'bg-yellow-500/20 text-yellow-400'
+                                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${selection.status === 'completed' ? 'bg-green-500/20 text-green-400' : selection.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'
                                                 }`}>
-                                                {selection.is_completed ? 'Completed' : 'Pending'}
+                                                {selection.status.charAt(0).toUpperCase() + selection.status.slice(1)}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3">

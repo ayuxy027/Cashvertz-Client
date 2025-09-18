@@ -14,6 +14,8 @@ const EventsPage = () => {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
     const [selectedItem, setSelectedItem] = useState('')
+    const [selectedPerOrderQty, setSelectedPerOrderQty] = useState<number>(1)
+    const [agreedPerOrderQty, setAgreedPerOrderQty] = useState<boolean>(false)
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [isUploading, setIsUploading] = useState(false)
     const [locations, setLocations] = useState<LocationWithItems[]>([])
@@ -198,9 +200,11 @@ const EventsPage = () => {
         }
     }, [setContextMobileNumber, setIsReturningUser])
 
-    const handleItemSelect = (item: { id: number; name: string; available_quantity: number; outlet: string }) => {
+    const handleItemSelect = (item: { id: number; name: string; available_quantity: number; outlet: string; per_order_quantity?: number }) => {
         if (item.available_quantity > 0) {
             setSelectedItem(`${item.name} (${item.outlet})`)
+            setSelectedPerOrderQty(item.per_order_quantity ?? 1)
+            setAgreedPerOrderQty(false)
         }
     }
 
@@ -234,6 +238,12 @@ const EventsPage = () => {
             }
 
             if (selectedItemDetails && selectedOutlet) {
+                // Enforce per-order quantity agreement on client before reserving
+                const perOrderQty = (selectedItemDetails as any).per_order_quantity || 1
+                if (perOrderQty > 1 && !agreedPerOrderQty) {
+                    alert(`This item requires ordering at least ${perOrderQty}. Please confirm before proceeding.`)
+                    return
+                }
                 // CHECKPOINT: Reserve via DB trigger by inserting pending selection
                 const success = await SupabaseService.saveUserSelection(
                     mobileNumber,
@@ -539,6 +549,9 @@ const EventsPage = () => {
                                                             <div className="flex-1">
                                                                 <div className="font-medium">{item.name}</div>
                                                                 <div className="text-sm opacity-75">{outlet.name}</div>
+                                                                {item.per_order_quantity && item.per_order_quantity > 1 && (
+                                                                    <div className="text-xs mt-1 text-blue-300">{item.per_order_quantity} per order</div>
+                                                                )}
                                                                 <div className={`text-xs mt-1 ${isSelected ? 'text-blue-300' : isAvailable ? 'text-green-300' : 'text-red-300'}`}>
                                                                     {isSelected ? 'Selected' : isAvailable ? `${item.available_quantity} available` : 'Out of stock'}
                                                                 </div>
@@ -564,9 +577,18 @@ const EventsPage = () => {
                     </div>
 
                     <div className="mt-8 text-center">
+                        {selectedPerOrderQty > 1 && (
+                            <div className="mb-4 text-sm text-white/90">
+                                This item requires ordering at least <span className="font-semibold" style={{ color: '#66FFB2' }}>{selectedPerOrderQty}</span> unit(s) in the app.
+                                <div className="mt-2 inline-flex items-center gap-2">
+                                    <input id="agree-min-qty" type="checkbox" className="accent-green-400" checked={agreedPerOrderQty} onChange={(e) => setAgreedPerOrderQty(e.target.checked)} />
+                                    <label htmlFor="agree-min-qty" className="select-none">I will order at least {selectedPerOrderQty} in the app</label>
+                                </div>
+                            </div>
+                        )}
                         <button
                             onClick={handleProceedToUpload}
-                            disabled={!selectedItem}
+                            disabled={!selectedItem || (selectedPerOrderQty > 1 && !agreedPerOrderQty)}
                             className="proceed-button px-8 py-4 rounded-full text-lg font-semibold text-black hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{ backgroundColor: '#66FFB2' }}
                         >
