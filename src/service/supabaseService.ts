@@ -12,7 +12,10 @@ export const supabase = createClient(supabaseUrl, supabaseKey)
 // Types for our database
 export interface Location {
   id: number
-  name: string
+  area_name: string
+  house_no: string
+  apartment: string
+  receiver_mobile: string
   created_at: string
   updated_at: string
 }
@@ -29,6 +32,8 @@ export interface Item {
   id: number
   name: string
   outlet_id: number
+  per_order_quantity: number
+  no_of_users: number
   available_quantity: number
   created_at: string
   updated_at: string
@@ -43,7 +48,9 @@ export interface UserSelection {
   screenshot_url?: string
   screenshot_uploaded_at?: string
   selected_at: string
-  is_completed: boolean
+  status: 'pending' | 'completed' | 'expired'
+  expires_at?: string
+  locked_quantity: number
 }
 
 export interface LocationWithItems {
@@ -56,6 +63,8 @@ export interface LocationWithItems {
       id: number
       name: string
       available_quantity: number
+      no_of_users?: number
+      per_order_quantity?: number
     }>
   }>
 }
@@ -69,14 +78,19 @@ export class SupabaseService {
         .from('locations')
         .select(`
           id,
-          name,
+          area_name,
+          house_no,
+          apartment,
+          receiver_mobile,
           outlets (
             id,
             name,
             items (
               id,
               name,
-              available_quantity
+              available_quantity,
+              no_of_users,
+              per_order_quantity
             )
           )
         `)
@@ -87,7 +101,22 @@ export class SupabaseService {
         throw locationsError
       }
 
-      return locations as LocationWithItems[]
+      // Map to expected shape with a synthesized human-readable name
+      return (locations || []).map((loc: any) => ({
+        id: loc.id,
+        name: `${loc.area_name}`,
+        outlets: (loc.outlets || []).map((o: any) => ({
+          id: o.id,
+          name: o.name,
+          items: (o.items || []).map((it: any) => ({
+            id: it.id,
+            name: it.name,
+            available_quantity: it.available_quantity,
+            no_of_users: it.no_of_users,
+            per_order_quantity: it.per_order_quantity
+          }))
+        }))
+      })) as LocationWithItems[]
     } catch (error) {
       console.error('Error in getLocationsWithItems:', error)
       throw error
@@ -101,14 +130,19 @@ export class SupabaseService {
         .from('locations')
         .select(`
           id,
-          name,
+          area_name,
+          house_no,
+          apartment,
+          receiver_mobile,
           outlets (
             id,
             name,
             items (
               id,
               name,
-              available_quantity
+              available_quantity,
+              no_of_users,
+              per_order_quantity
             )
           )
         `)
@@ -120,31 +154,33 @@ export class SupabaseService {
         return null
       }
 
-      return location as LocationWithItems
+      if (!location) return null
+      return {
+        id: location.id,
+        name: `${location.area_name}`,
+        outlets: (location.outlets || []).map((o: any) => ({
+          id: o.id,
+          name: o.name,
+          items: (o.items || []).map((it: any) => ({
+            id: it.id,
+            name: it.name,
+            available_quantity: it.available_quantity,
+            no_of_users: it.no_of_users,
+            per_order_quantity: it.per_order_quantity
+          }))
+        }))
+      }
     } catch (error) {
       console.error('Error in getLocationWithItems:', error)
       return null
     }
   }
 
-  // Update item quantity (when user selects an item)
-  static async updateItemQuantity(itemId: number, newQuantity: number): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('items')
-        .update({ available_quantity: newQuantity })
-        .eq('id', itemId)
-
-      if (error) {
-        console.error('Error updating item quantity:', error)
-        return false
-      }
-
-      return true
-    } catch (error) {
-      console.error('Error in updateItemQuantity:', error)
-      return false
-    }
+  // Deprecated: Directly updating available_quantity is no longer supported.
+  // Quantity is reserved via inserting into user_selections (triggers handle stock).
+  static async updateItemQuantity(_itemId: number, _newQuantity: number): Promise<boolean> {
+    console.warn('updateItemQuantity is deprecated. Reservation is handled via user_selections triggers.')
+    return true
   }
 
   // Save user selection
@@ -162,7 +198,7 @@ export class SupabaseService {
           location_id: locationId,
           outlet_id: outletId,
           item_id: itemId,
-          is_completed: false
+          status: 'pending'
         })
 
       if (error) {
@@ -188,12 +224,12 @@ export class SupabaseService {
         .from('user_selections')
         .select(`
           *,
-          locations!inner(name),
+          locations!inner(area_name),
           outlets!inner(name),
           items!inner(name)
         `)
         .eq('mobile_number', mobileNumber)
-        .eq('is_completed', false)
+        .eq('status', 'pending')
         .order('selected_at', { ascending: false })
         .limit(1)
         .single()
@@ -206,7 +242,7 @@ export class SupabaseService {
       // Transform the data to include names
       return {
         ...data,
-        location_name: data.locations?.name,
+        location_name: data.locations?.area_name,
         outlet_name: data.outlets?.name,
         item_name: data.items?.name
       }
@@ -221,9 +257,9 @@ export class SupabaseService {
     try {
       const { error } = await supabase
         .from('user_selections')
-        .update({ is_completed: true })
+        .update({ status: 'completed' })
         .eq('mobile_number', mobileNumber)
-        .eq('is_completed', false)
+        .eq('status', 'pending')
 
       if (error) {
         console.error('Error marking selection as completed:', error)
@@ -237,6 +273,30 @@ export class SupabaseService {
     }
   }
 
+  // Restore item quantity if user abandons upload (timeout mechanism)
+  static async restoreItemQuantity(itemId: number, quantityToRestore: number): Promise<boolean> {
+    try {
+      // With new schema, stock is managed via triggers on user_selections.
+      // To restore, expire any pending reservations for this item
+      // created by the current user/session policy upstream.
+      const { error } = await supabase
+        .from('user_selections')
+        .update({ status: 'expired' })
+        .eq('item_id', itemId)
+        .eq('status', 'pending')
+
+      if (error) {
+        console.error('Error restoring item quantity:', error)
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error in restoreItemQuantity:', error)
+      return false
+    }
+  }
+
   // Check if user is returning (has any previous selections)
   static async isReturningUser(mobileNumber: string): Promise<boolean> {
     try {
@@ -244,6 +304,7 @@ export class SupabaseService {
         .from('user_selections')
         .select('id')
         .eq('mobile_number', mobileNumber)
+        .limit(1)
         .limit(1)
 
       if (error) {
@@ -265,7 +326,7 @@ export class SupabaseService {
         .from('user_selections')
         .select('id')
         .eq('mobile_number', mobileNumber)
-        .eq('is_completed', true)
+        .eq('status', 'completed')
         .limit(1)
 
       if (error) {
@@ -283,45 +344,16 @@ export class SupabaseService {
   // Clear user's incomplete session data (for changing choices)
   static async clearIncompleteSession(mobileNumber: string): Promise<boolean> {
     try {
-      // Get the incomplete selection to restore item quantity
-      const { data: incompleteSelection, error: fetchError } = await supabase
-        .from('user_selections')
-        .select('item_id')
-        .eq('mobile_number', mobileNumber)
-        .eq('is_completed', false)
-        .single()
-
-      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows found
-        console.error('Error fetching incomplete selection:', fetchError)
-        return false
-      }
-
-      // Delete incomplete selection
+      // Delete pending selection (triggers in DB will restore stock)
       const { error: deleteError } = await supabase
         .from('user_selections')
         .delete()
         .eq('mobile_number', mobileNumber)
-        .eq('is_completed', false)
+        .eq('status', 'pending')
 
       if (deleteError) {
         console.error('Error deleting incomplete selection:', deleteError)
         return false
-      }
-
-      // Restore item quantity if there was an incomplete selection
-      if (incompleteSelection) {
-        const { data: item, error: itemError } = await supabase
-          .from('items')
-          .select('available_quantity')
-          .eq('id', incompleteSelection.item_id)
-          .single()
-
-        if (!itemError && item) {
-          await supabase
-            .from('items')
-            .update({ available_quantity: item.available_quantity + 1 })
-            .eq('id', incompleteSelection.item_id)
-        }
       }
 
       return true
@@ -341,7 +373,7 @@ export class SupabaseService {
     screenshot_url?: string;
     screenshot_uploaded_at?: string;
     selected_at: string;
-    is_completed: boolean;
+    status: 'pending' | 'completed' | 'expired';
   }>> {
     try {
       const { data, error } = await supabase
@@ -350,10 +382,10 @@ export class SupabaseService {
           id,
           mobile_number,
           selected_at,
-          is_completed,
+          status,
           screenshot_url,
           screenshot_uploaded_at,
-          locations!inner(name),
+          locations!inner(area_name),
           outlets!inner(name),
           items!inner(name)
         `)
@@ -368,13 +400,13 @@ export class SupabaseService {
       return data.map((selection: any) => ({
         id: selection.id,
         mobile_number: selection.mobile_number,
-        location_name: selection.locations?.name || 'Unknown',
+        location_name: selection.locations?.area_name || 'Unknown',
         outlet_name: selection.outlets?.name || 'Unknown',
         item_name: selection.items?.name || 'Unknown',
         screenshot_url: selection.screenshot_url,
         screenshot_uploaded_at: selection.screenshot_uploaded_at,
         selected_at: selection.selected_at,
-        is_completed: selection.is_completed
+        status: selection.status
       }))
     } catch (error) {
       console.error('Error in getAllUserSelections:', error)
@@ -401,8 +433,8 @@ export class SupabaseService {
         { count: totalItems }
       ] = await Promise.all([
         supabase.from('user_selections').select('*', { count: 'exact', head: true }),
-        supabase.from('user_selections').select('*', { count: 'exact', head: true }).eq('is_completed', true),
-        supabase.from('user_selections').select('*', { count: 'exact', head: true }).eq('is_completed', false),
+        supabase.from('user_selections').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+        supabase.from('user_selections').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('locations').select('*', { count: 'exact', head: true }),
         supabase.from('outlets').select('*', { count: 'exact', head: true }),
         supabase.from('items').select('*', { count: 'exact', head: true })
@@ -456,7 +488,7 @@ export class SupabaseService {
           screenshot_uploaded_at: new Date().toISOString()
         })
         .eq('mobile_number', mobileNumber)
-        .eq('is_completed', false)
+        .eq('status', 'pending')
 
       if (updateError) {
         console.error('Error updating screenshot URL:', updateError)

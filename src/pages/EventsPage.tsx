@@ -230,7 +230,7 @@ const EventsPage = () => {
             }
 
             if (selectedItemDetails && selectedOutlet) {
-                // Save user selection to Supabase
+                // CHECKPOINT: Reserve via DB trigger by inserting pending selection
                 const success = await SupabaseService.saveUserSelection(
                     mobileNumber,
                     currentLocation.id,
@@ -239,12 +239,6 @@ const EventsPage = () => {
                 )
 
                 if (success) {
-                    // Update item quantity in Supabase
-                    await SupabaseService.updateItemQuantity(
-                        selectedItemDetails.id,
-                        selectedItemDetails.available_quantity - 1
-                    )
-
                     // Store locally for display
                     localStorage.setItem('selectedItem', selectedItem)
                     localStorage.setItem('selectedAddress', selectedAddress)
@@ -329,6 +323,8 @@ const EventsPage = () => {
         localStorage.removeItem('userMobileNumber')
         window.location.reload()
     }
+
+    // No timeout cleanup necessary; DB handles expiry via scheduled function
 
     // Function to clear session data and allow user to change choice
     const clearSessionAndRestart = async () => {
@@ -539,8 +535,8 @@ const EventsPage = () => {
                                                             <div className="flex-1">
                                                                 <div className="font-medium">{item.name}</div>
                                                                 <div className="text-sm opacity-75">{outlet.name}</div>
-                                                                <div className={`text-xs mt-1 ${isAvailable ? 'text-green-300' : 'text-red-300'}`}>
-                                                                    {isAvailable ? `${item.available_quantity} available` : 'Out of stock'}
+                                                                <div className={`text-xs mt-1 ${isSelected ? 'text-blue-300' : isAvailable ? 'text-green-300' : 'text-red-300'}`}>
+                                                                    {isSelected ? 'Selected' : isAvailable ? `${item.available_quantity} available` : 'Out of stock'}
                                                                 </div>
                                                             </div>
                                                             {isSelected && (
@@ -570,7 +566,7 @@ const EventsPage = () => {
                             className="proceed-button px-8 py-4 rounded-full text-lg font-semibold text-black hover:opacity-90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{ backgroundColor: '#66FFB2' }}
                         >
-                            Proceed to Upload Screenshot
+                            Reserve Item & Upload Screenshot
                         </button>
                     </div>
                 </div>

@@ -1,4 +1,5 @@
 {
+  "name": "cashvertz-client",
   "rewrites": [
     {
       "source": "/(.*)",
