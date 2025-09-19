@@ -465,7 +465,7 @@ const EventsPage = () => {
                 </h1>
 
                 <p className="text-lg text-white/90 text-center mb-8 max-w-2xl mx-auto">
-                    Choose your preferred zone. We'll randomly assign you an outlet within that zone for load balancing.
+                    Choose your preferred metro station zone. We'll randomly assign you an outlet in front of that metro station for load balancing.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
@@ -520,6 +520,12 @@ const EventsPage = () => {
                         <p className="text-white/60 text-sm mt-2">
                             Zone: {selectedZone.name}
                         </p>
+                        <div className="mt-4 p-3 bg-green-500/20 border border-green-400/30 rounded-lg">
+                            <p className="text-green-300 text-sm font-medium">📞 Receiver Number:</p>
+                            <p className="text-green-200 text-lg font-bold">
+                                {selectedZone.name.includes('Swargate') ? '8007881670' : '9021882796'}
+                            </p>
+                        </div>
                     </div>
 
                     <div className="text-center mb-8">
@@ -527,7 +533,7 @@ const EventsPage = () => {
                             Next Steps
                         </h2>
                         <p className="text-white/80 text-lg mb-6">
-                            Visit your assigned outlet and place an order (max ₹100). Then upload a screenshot of your order to complete the process.
+                            Visit your assigned outlet in front of the metro station and place an order (max ₹100). Then upload a screenshot of your order to complete the process.
                         </p>
                     </div>
 
@@ -600,9 +606,15 @@ const EventsPage = () => {
                                 <p className="text-white/90">{assignedOutlet?.address_line_1 || '—'}</p>
                                 <p className="text-white/90">{assignedOutlet?.main_street || '—'}</p>
                             </div>
-                            <div>
+                            <div className="mb-3">
                                 <p className="text-white/80 text-sm">💰 Max Order Amount:</p>
                                 <p className="text-white/90">₹100 (Test Mode)</p>
+                            </div>
+                            <div className="p-3 bg-green-500/20 border border-green-400/30 rounded-lg">
+                                <p className="text-green-300 text-sm font-medium">📞 Receiver Number:</p>
+                                <p className="text-green-200 text-lg font-bold">
+                                    {selectedZone?.name?.includes('Swargate') ? '8007881670' : '9021882796'}
+                                </p>
                             </div>
                         </div>
                     </div>
