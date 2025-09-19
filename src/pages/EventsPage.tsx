@@ -706,10 +706,28 @@ const EventsPage = () => {
                 </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 mb-8">
                 <p className="text-white/80 text-lg">
                     Thank you for participating in our program!
                 </p>
+            </div>
+
+            {/* Had some trouble section */}
+            <div className="max-w-2xl mx-auto">
+                <div className="bg-yellow-500/10 border border-yellow-400/30 rounded-lg p-6 mb-6">
+                    <h3 className="text-lg font-semibold text-yellow-300 mb-3">Had some trouble while completing the order?</h3>
+                    <p className="text-yellow-200/80 text-sm mb-4">
+                        Don't worry! If you faced any issues with your order, you can start over and try again.
+                    </p>
+                    <div className="flex justify-center">
+                        <button
+                            onClick={clearAllData}
+                            className="px-6 py-2 bg-yellow-500/20 text-yellow-300 border border-yellow-400/30 rounded-lg hover:bg-yellow-500/30 transition-colors text-sm font-medium"
+                        >
+                            Start Over
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     )
