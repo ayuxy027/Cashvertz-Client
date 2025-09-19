@@ -465,7 +465,7 @@ const EventsPage = () => {
                 </h1>
 
                 <p className="text-lg text-white/90 text-center mb-8 max-w-2xl mx-auto">
-                    Choose your preferred metro station zone. We'll randomly assign you an outlet in front of that metro station for load balancing.
+                    Choose your preferred zone. We'll randomly assign you an outlet at the assigned location for load balancing.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
@@ -523,8 +523,15 @@ const EventsPage = () => {
                         <div className="mt-4 p-3 bg-green-500/20 border border-green-400/30 rounded-lg">
                             <p className="text-green-300 text-sm font-medium">📞 Receiver Number:</p>
                             <p className="text-green-200 text-lg font-bold">
-                                {selectedZone.name.includes('Swargate') ? '8007881670' : '9021882796'}
+                                {selectedZone.name.includes('Swargate')
+                                    ? '8007881670'
+                                    : selectedZone.name.includes('PMC')
+                                        ? '9021882796'
+                                        : '7798386083'}
                             </p>
+                            {selectedZone.name.includes('Kothrud') && (
+                                <p className="text-green-200 text-xs mt-2">Note: Any outlet works at this location.</p>
+                            )}
                         </div>
                     </div>
 
@@ -613,8 +620,15 @@ const EventsPage = () => {
                             <div className="p-3 bg-green-500/20 border border-green-400/30 rounded-lg">
                                 <p className="text-green-300 text-sm font-medium">📞 Receiver Number:</p>
                                 <p className="text-green-200 text-lg font-bold">
-                                    {selectedZone?.name?.includes('Swargate') ? '8007881670' : '9021882796'}
+                                    {selectedZone?.name?.includes('Swargate')
+                                        ? '8007881670'
+                                        : selectedZone?.name?.includes('PMC')
+                                            ? '9021882796'
+                                            : '7798386083'}
                                 </p>
+                                {selectedZone?.name?.includes('Kothrud') && (
+                                    <p className="text-green-200 text-xs mt-2">Note: Any outlet works at this location.</p>
+                                )}
                             </div>
                         </div>
                     </div>
