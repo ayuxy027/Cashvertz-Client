@@ -238,9 +238,13 @@ const EventsPage = () => {
     const renderForm = () => (
         <div className="max-w-4xl mx-auto text-center">
             <div className="mb-8 sm:mb-12">
-                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl mb-4" style={{ color: '#34D399' }}>
-                    Amazon 200 pe 200 Campaign
+                <h1 className="flex items-center justify-center gap-3 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl mb-1" style={{ color: '#34D399' }}>
+                    <span>Something Great Here</span>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="#34D399" aria-hidden="true">
+                        <path d="M5 3l1.5 3.5L10 8l-3.5 1.5L5 13l-1.5-3.5L0 8l3.5-1.5L5 3zm14 2l2 4 4 2-4 2-2 4-2-4-4-2 4-2 2-4zM10 14l1 2.5L14 18l-3 1.5L10 22l-1-2.5L6 18l3-1.5 1-2.5z" />
+                    </svg>
                 </h1>
+                <div className="text-xs sm:text-sm text-white/70 mb-5">Amazon 200 pe 200</div>
                 <h2 className="text-xl font-bold sm:text-2xl md:text-3xl lg:text-4xl mb-6" style={{ color: '#34D399' }}>
                     Submit your order details
                 </h2>
