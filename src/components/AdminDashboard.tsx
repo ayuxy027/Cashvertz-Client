@@ -195,7 +195,7 @@ const AdminDashboard = () => {
                                             Order Details
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                                            Screenshot
+                                            UPI ID
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                                             Status
@@ -245,18 +245,7 @@ const AdminDashboard = () => {
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                {submission.screenshot_url ? (
-                                                    <a
-                                                        href={`${supabase.storage.from('screenshots').getPublicUrl(submission.screenshot_url).data.publicUrl}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-blue-400 hover:text-blue-300 underline"
-                                                    >
-                                                        View Screenshot
-                                                    </a>
-                                                ) : (
-                                                    <span className="text-white/40">No screenshot</span>
-                                                )}
+                                                <span className="text-sm text-white">{submission.upi_id}</span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${submission.status === 'reviewed'
