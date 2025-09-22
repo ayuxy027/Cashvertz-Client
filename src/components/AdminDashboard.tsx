@@ -235,6 +235,9 @@ const AdminDashboard = () => {
                                                 <div className="text-sm text-white/80">
                                                     <strong>Amount:</strong> ₹{submission.product_amount}
                                                 </div>
+                                                <div className="text-sm text-white/70">
+                                                    <strong>UPI:</strong> {submission.upi_id}
+                                                </div>
                                                 {submission.product_link && (
                                                     <a href={submission.product_link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline text-xs">
                                                         View Product Link
@@ -268,7 +271,7 @@ const AdminDashboard = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                {submission.status !== 'reviewed' && submission.screenshot_url && (
+                                                {submission.status === 'submitted' && (
                                                     <div className="flex space-x-2">
                                                         <button
                                                             onClick={() => approveSubmission(submission.id)}
