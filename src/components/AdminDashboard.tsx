@@ -97,6 +97,38 @@ const AdminDashboard = () => {
         }
     }
 
+    const approveAll = async () => {
+        try {
+            const { error } = await supabase
+                .from('amazon_orders')
+                .update({ status: 'reviewed' })
+                .eq('status', 'submitted')
+
+            if (error) {
+                throw error
+            }
+            loadSubmissions()
+        } catch {
+            setError('Failed to approve all submissions')
+        }
+    }
+
+    const rejectAll = async () => {
+        try {
+            const { error } = await supabase
+                .from('amazon_orders')
+                .update({ status: 'rejected' })
+                .eq('status', 'submitted')
+
+            if (error) {
+                throw error
+            }
+            loadSubmissions()
+        } catch {
+            setError('Failed to reject all submissions')
+        }
+    }
+
     if (loading) {
         return (
             <div className="relative min-h-screen w-full overflow-hidden text-white bg-black">
@@ -154,7 +186,23 @@ const AdminDashboard = () => {
                         <h2 className="text-3xl font-bold mb-2" style={{ color: '#34D399' }}>
                             Amazon Orders
                         </h2>
-                        <p className="text-white/80">Manage and review user submissions</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <p className="text-white/80">Manage and review user submissions</p>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={approveAll}
+                                    className="text-green-300 hover:text-green-200 bg-green-500/20 hover:bg-green-500/30 px-3 py-1 rounded-md text-xs border border-green-400/30 transition-colors"
+                                >
+                                    Approve All (Submitted)
+                                </button>
+                                <button
+                                    onClick={rejectAll}
+                                    className="text-red-300 hover:text-red-200 bg-red-500/20 hover:bg-red-500/30 px-3 py-1 rounded-md text-xs border border-red-400/30 transition-colors"
+                                >
+                                    Reject All (Submitted)
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Statistics Panel */}
@@ -216,8 +264,8 @@ const AdminDashboard = () => {
                                                 {submission.email && (
                                                     <div className="text-xs text-white/40">{submission.email}</div>
                                                 )}
-                                                <div className="text-sm text-white/40">
-                                                    {new Date(submission.created_at).toLocaleDateString()}
+                                                <div className="text-xs text-white/50">
+                                                    Submitted: {new Date(submission.created_at).toLocaleString()}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
