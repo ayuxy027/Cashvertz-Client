@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/react'
 import ComingSoon from './ComingSoon'
 import EventsPage from './pages/EventsPage'
 import AdminDashboard from './components/AdminDashboard'
+import Terms from './pages/Terms'
 
 const App = () => {
   return (
@@ -10,8 +11,9 @@ const App = () => {
       <Router>
         <Routes>
           <Route path="/" element={<ComingSoon />} />
-          <Route path="/events" element={<EventsPage />} />
+          <Route path="/amazon" element={<EventsPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/terms" element={<Terms />} />
         </Routes>
       </Router>
       <Analytics />

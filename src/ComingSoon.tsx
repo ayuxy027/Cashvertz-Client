@@ -219,14 +219,14 @@ const ComingSoon = () => {
                 {/* Join Event Button */}
                 <div className="mt-8">
                     <a
-                        href="/events"
+                        href="/amazon"
                         className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition-all duration-200 sm:px-8 sm:py-4 sm:text-base"
                         style={{ backgroundColor: '#66FFB2' }}
                     >
                         <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
                         </svg>
-                        <span>Join Our Event</span>
+                        <span>Join Campaign</span>
                     </a>
                 </div>
 

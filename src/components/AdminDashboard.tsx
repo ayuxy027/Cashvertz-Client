@@ -5,18 +5,22 @@ import bgSvg from '../assets/bg.svg'
 
 interface AdminSubmission {
     id: string
-    mobile_number: string
     user_name: string
+    phone: string
+    email: string | null
+    pin_code: string
+    address_line_1: string
+    address_line_2: string | null
+    landmark: string | null
+    city: string
+    product_link: string | null
+    product_name: string
+    product_amount: number
+    upi_id: string
+    screenshot_url: string | null
     status: string
-    screenshot_url: string
-    admin_approved: boolean
-    admin_notes: string
     created_at: string
     updated_at: string
-    zone_name: string
-    outlet_name: string
-    address_line_1: string
-    main_street: string
 }
 
 const AdminDashboard = () => {
@@ -38,7 +42,7 @@ const AdminDashboard = () => {
         try {
             setLoading(true)
             const { data, error } = await supabase
-                .from('admin_dashboard')
+                .from('amazon_orders_view')
                 .select('*')
                 .order('created_at', { ascending: false })
 
@@ -49,13 +53,12 @@ const AdminDashboard = () => {
 
             // Calculate statistics
             const total = data?.length || 0
-            const pending = data?.filter(s => s.status === 'screenshot_uploaded' && !s.admin_approved).length || 0
-            const approved = data?.filter(s => s.admin_approved === true).length || 0
-            const rejected = data?.filter(s => s.admin_approved === false).length || 0
+            const pending = data?.filter(s => s.status === 'submitted').length || 0
+            const approved = data?.filter(s => s.status === 'reviewed').length || 0
+            const rejected = data?.filter(s => s.status === 'rejected').length || 0
 
             setStats({ total, pending, approved, rejected })
-        } catch (error) {
-            console.error('Error loading submissions:', error)
+        } catch {
             setError('Failed to load submissions')
         } finally {
             setLoading(false)
@@ -65,20 +68,15 @@ const AdminDashboard = () => {
     const approveSubmission = async (id: string) => {
         try {
             const { error } = await supabase
-                .from('user_selections')
-                .update({
-                    admin_approved: true,
-                    admin_notes: 'Approved by admin',
-                    updated_at: new Date().toISOString()
-                })
+                .from('amazon_orders')
+                .update({ status: 'reviewed' })
                 .eq('id', id)
 
             if (error) {
                 throw error
             }
             loadSubmissions()
-        } catch (error) {
-            console.error('Error approving submission:', error)
+        } catch {
             setError('Failed to approve submission')
         }
     }
@@ -86,20 +84,15 @@ const AdminDashboard = () => {
     const rejectSubmission = async (id: string) => {
         try {
             const { error } = await supabase
-                .from('user_selections')
-                .update({
-                    admin_approved: false,
-                    admin_notes: 'Rejected by admin',
-                    updated_at: new Date().toISOString()
-                })
+                .from('amazon_orders')
+                .update({ status: 'rejected' })
                 .eq('id', id)
 
             if (error) {
                 throw error
             }
             loadSubmissions()
-        } catch (error) {
-            console.error('Error rejecting submission:', error)
+        } catch {
             setError('Failed to reject submission')
         }
     }
@@ -148,7 +141,7 @@ const AdminDashboard = () => {
                         className="h-12 w-auto sm:h-16"
                         loading="eager"
                     />
-                    <h1 className="text-2xl font-bold" style={{ color: '#66FFB2' }}>
+                    <h1 className="text-2xl font-bold" style={{ color: '#34D399' }}>
                         Admin Dashboard
                     </h1>
                 </div>
@@ -158,8 +151,8 @@ const AdminDashboard = () => {
             <main className="px-4 py-8 sm:px-6 sm:py-16">
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-8">
-                        <h2 className="text-3xl font-bold mb-2" style={{ color: '#66FFB2' }}>
-                            Screenshot Submissions
+                        <h2 className="text-3xl font-bold mb-2" style={{ color: '#34D399' }}>
+                            Amazon Orders
                         </h2>
                         <p className="text-white/80">Manage and review user submissions</p>
                     </div>
@@ -199,7 +192,7 @@ const AdminDashboard = () => {
                                             User
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                                            Assignment
+                                            Order Details
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                                             Screenshot
@@ -219,23 +212,34 @@ const AdminDashboard = () => {
                                                 <div className="text-sm font-medium text-white">
                                                     {submission.user_name}
                                                 </div>
-                                                <div className="text-sm text-white/60">
-                                                    {submission.mobile_number}
-                                                </div>
+                                                <div className="text-sm text-white/60">{submission.phone}</div>
+                                                {submission.email && (
+                                                    <div className="text-xs text-white/40">{submission.email}</div>
+                                                )}
                                                 <div className="text-sm text-white/40">
                                                     {new Date(submission.created_at).toLocaleDateString()}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="text-sm text-white">
-                                                    <strong>Zone:</strong> {submission.zone_name}
+                                                <div className="text-sm text-white/80">{submission.address_line_1}</div>
+                                                {submission.address_line_2 && (
+                                                    <div className="text-sm text-white/60">{submission.address_line_2}</div>
+                                                )}
+                                                {submission.landmark && (
+                                                    <div className="text-sm text-white/60">{submission.landmark}</div>
+                                                )}
+                                                <div className="text-sm text-white">{submission.city} - {submission.pin_code}</div>
+                                                <div className="text-sm text-white/80 mt-2">
+                                                    <strong>Product:</strong> {submission.product_name}
                                                 </div>
-                                                <div className="text-sm text-white">
-                                                    <strong>Outlet:</strong> {submission.outlet_name}
+                                                <div className="text-sm text-white/80">
+                                                    <strong>Amount:</strong> ₹{submission.product_amount}
                                                 </div>
-                                                <div className="text-sm text-white/60">
-                                                    {submission.address_line_1}, {submission.main_street}
-                                                </div>
+                                                {submission.product_link && (
+                                                    <a href={submission.product_link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline text-xs">
+                                                        View Product Link
+                                                    </a>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 {submission.screenshot_url ? (
@@ -252,19 +256,19 @@ const AdminDashboard = () => {
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${submission.admin_approved
+                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${submission.status === 'reviewed'
                                                     ? 'bg-green-500/20 text-green-300 border border-green-400/30'
-                                                    : submission.status === 'screenshot_uploaded'
+                                                    : submission.status === 'submitted'
                                                         ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-400/30'
-                                                        : 'bg-white/10 text-white/60 border border-white/20'
+                                                        : submission.status === 'rejected'
+                                                            ? 'bg-red-500/20 text-red-300 border border-red-400/30'
+                                                            : 'bg-white/10 text-white/60 border border-white/20'
                                                     }`}>
-                                                    {submission.admin_approved ? 'Approved' :
-                                                        submission.status === 'screenshot_uploaded' ? 'Pending Review' :
-                                                            submission.status}
+                                                    {submission.status}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                {!submission.admin_approved && submission.screenshot_url && (
+                                                {submission.status !== 'reviewed' && submission.screenshot_url && (
                                                     <div className="flex space-x-2">
                                                         <button
                                                             onClick={() => approveSubmission(submission.id)}
@@ -278,11 +282,6 @@ const AdminDashboard = () => {
                                                         >
                                                             Reject
                                                         </button>
-                                                    </div>
-                                                )}
-                                                {submission.admin_notes && (
-                                                    <div className="text-xs text-white/50 mt-1">
-                                                        {submission.admin_notes}
                                                     </div>
                                                 )}
                                             </td>
