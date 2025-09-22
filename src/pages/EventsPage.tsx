@@ -238,13 +238,9 @@ const EventsPage = () => {
     const renderForm = () => (
         <div className="max-w-4xl mx-auto text-center">
             <div className="mb-8 sm:mb-12">
-                <h1 className="flex items-center justify-center gap-3 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl mb-1" style={{ color: '#34D399' }}>
-                    <span>Something Great Here</span>
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="#34D399" aria-hidden="true">
-                        <path d="M5 3l1.5 3.5L10 8l-3.5 1.5L5 13l-1.5-3.5L0 8l3.5-1.5L5 3zm14 2l2 4 4 2-4 2-2 4-2-4-4-2 4-2 2-4zM10 14l1 2.5L14 18l-3 1.5L10 22l-1-2.5L6 18l3-1.5 1-2.5z" />
-                    </svg>
+                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl mb-3" style={{ color: '#34D399' }}>
+                    Amazon 200 pe 200
                 </h1>
-                <div className="text-xs sm:text-sm text-white/70 mb-5">Amazon 200 pe 200</div>
                 <h2 className="text-xl font-bold sm:text-2xl md:text-3xl lg:text-4xl mb-6" style={{ color: '#34D399' }}>
                     Submit your order details
                 </h2>
@@ -297,8 +293,8 @@ const EventsPage = () => {
                                 </>
                             ) : (
                                 <>
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
+                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                        <path d="M12 2l2.1 4.7L19 8.9l-4.2 2L13 16l-1-5.1L7 8.9l4.9-2.2L12 2z" />
                                     </svg>
                                     <span>Submit</span>
                                 </>

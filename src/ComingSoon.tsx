@@ -216,7 +216,7 @@ const ComingSoon = () => {
                     <div className="mt-3 text-sm" style={{ color: '#66FFB2' }}>Thanks! Check your email for confirmation.</div>
                 )}
 
-                {/* Join Event Button */}
+                {/* Button to campaign */}
                 <div className="mt-8">
                     <a
                         href="/amazon"
@@ -226,7 +226,7 @@ const ComingSoon = () => {
                         <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
                         </svg>
-                        <span>Join Campaign</span>
+                        <span>Something Great Here</span>
                     </a>
                 </div>
 
