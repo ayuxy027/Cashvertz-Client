@@ -1,31 +1,28 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from '../assets/logo-light.png'
 import bgSvg from '../assets/bg.svg'
-import { supabase } from '../lib/supabase'
+
 
 const EventsPage = () => {
     const navigate = useNavigate()
 
-    // Form fields (Amazon campaign)
-    const [userName, setUserName] = useState('')
-    const [phone, setPhone] = useState('')
-    const [email, setEmail] = useState('')
-    const [pinCode, setPinCode] = useState('')
-    const [addressLine1, setAddressLine1] = useState('')
-    const [addressLine2, setAddressLine2] = useState('')
-    const [landmark, setLandmark] = useState('')
-    const [city, setCity] = useState('')
-    const [productLink, setProductLink] = useState('')
-    const [productName, setProductName] = useState('')
-    const [productAmount, setProductAmount] = useState('')
-    const [upiId, setUpiId] = useState('')
+    // Form fields removed (campaign closed)
+    const setUserName = (_: string) => { }
+    const setPhone = (_: string) => { }
+    const setEmail = (_: string) => { }
+    const setPinCode = (_: string) => { }
+    const setAddressLine1 = (_: string) => { }
+    const setAddressLine2 = (_: string) => { }
+    const setLandmark = (_: string) => { }
+    const setCity = (_: string) => { }
+    const setProductLink = (_: string) => { }
+    const setProductName = (_: string) => { }
+    const setProductAmount = (_: string) => { }
+    const setUpiId = (_: string) => { }
 
     // UI state
-    const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState('')
-    const [submissionSuccess, setSubmissionSuccess] = useState(false)
-    const [agreed, setAgreed] = useState(false)
+    // Form closed
 
     // Restore form state from localStorage
     useEffect(() => {
@@ -51,174 +48,7 @@ const EventsPage = () => {
         }
     }, [])
 
-    const validatePhone = useCallback((number: string): boolean => {
-        return /^\d{10}$/.test(number.replace(/\D/g, ''))
-    }, [])
 
-    const validateAmount = useCallback((amountStr: string): boolean => {
-        if (!amountStr) {
-            return false
-        }
-        const num = Number(amountStr)
-        return Number.isFinite(num) && num >= 200
-    }, [])
-
-    const persistToLocalStorage = useCallback(() => {
-        const entries: Array<[string, string]> = [
-            ['amazon_userName', userName],
-            ['amazon_phone', phone],
-            ['amazon_email', email],
-            ['amazon_pinCode', pinCode],
-            ['amazon_addressLine1', addressLine1],
-            ['amazon_addressLine2', addressLine2],
-            ['amazon_landmark', landmark],
-            ['amazon_city', city],
-            ['amazon_productLink', productLink],
-            ['amazon_productName', productName],
-            ['amazon_productAmount', productAmount],
-            ['amazon_upiId', upiId],
-        ]
-        for (const [k, v] of entries) {
-            if (v) {
-                localStorage.setItem(k, v)
-            }
-        }
-    }, [
-        userName,
-        phone,
-        email,
-        pinCode,
-        addressLine1,
-        addressLine2,
-        landmark,
-        city,
-        productLink,
-        productName,
-        productAmount,
-        upiId,
-    ])
-
-    const handleSubmit = useCallback(async (e: React.FormEvent) => {
-        e.preventDefault()
-        setError('')
-        setIsLoading(true)
-        try {
-            if (!userName.trim()) {
-                setError('Please enter your name')
-                return
-            }
-            if (!validatePhone(phone)) {
-                setError('Please enter a valid 10-digit phone number')
-                return
-            }
-            if (!pinCode.trim()) {
-                setError('Please enter your pin code')
-                return
-            }
-            if (!addressLine1.trim()) {
-                setError('Please enter Address Line 1')
-                return
-            }
-            if (!city.trim()) {
-                setError('Please enter your city')
-                return
-            }
-            if (!productName.trim()) {
-                setError('Please enter the product name')
-                return
-            }
-            if (!validateAmount(productAmount)) {
-                setError('Product amount must be at least ₹200')
-                return
-            }
-            if (!upiId.trim()) {
-                setError('Please enter your UPI ID')
-                return
-            }
-            if (!agreed) {
-                setError('Please agree to the campaign Terms & Conditions')
-                return
-            }
-
-            persistToLocalStorage()
-
-            // Enforce monthly participation limit: up to 3 per month (phone+email pair if email provided)
-            const now = new Date()
-            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-            const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-            let countRes
-            if (email.trim()) {
-                countRes = await supabase
-                    .from('amazon_orders')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('phone', phone.trim())
-                    .eq('email', email.trim())
-                    .gte('created_at', monthStart.toISOString())
-                    .lt('created_at', nextMonth.toISOString())
-            } else {
-                countRes = await supabase
-                    .from('amazon_orders')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('phone', phone.trim())
-                    .gte('created_at', monthStart.toISOString())
-                    .lt('created_at', nextMonth.toISOString())
-            }
-            if (countRes.error) {
-                setError('Failed to validate monthly limit. Please try again.')
-                return
-            }
-            if ((countRes.count ?? 0) >= 3) {
-                setError('Monthly participation limit reached (max 3 per month).')
-                return
-            }
-
-            // Insert order
-            const { error: insertErr } = await supabase.from('amazon_orders').insert([
-                {
-                    user_name: userName.trim(),
-                    phone: phone.trim(),
-                    email: email.trim() || null,
-                    pin_code: pinCode.trim(),
-                    address_line_1: addressLine1.trim(),
-                    address_line_2: addressLine2.trim() || null,
-                    landmark: landmark.trim() || null,
-                    city: city.trim(),
-                    product_link: productLink.trim() || null,
-                    product_name: productName.trim(),
-                    product_amount: Number(productAmount),
-                    upi_id: upiId.trim(),
-                    status: 'submitted',
-                },
-            ])
-            if (insertErr) {
-                setError('Failed to submit. Please try again.')
-                return
-            }
-
-            setSubmissionSuccess(true)
-        } catch {
-            setError('Something went wrong. Please try again.')
-        } finally {
-            setIsLoading(false)
-        }
-    }, [
-        userName,
-        phone,
-        email,
-        pinCode,
-        addressLine1,
-        addressLine2,
-        landmark,
-        city,
-        productLink,
-        productName,
-        productAmount,
-        upiId,
-        validatePhone,
-        validateAmount,
-        persistToLocalStorage,
-        agreed,
-    ])
 
     // Keep compatibility with any earlier prefill
     useEffect(() => {
@@ -229,12 +59,6 @@ const EventsPage = () => {
         }
     }, [])
 
-
-    // The following functions and variables are not used in this simplified version,
-    // so we do not define them to avoid linter errors.
-
-    // Renderers for legacy steps are omitted.
-
     const renderForm = () => (
         <div className="max-w-4xl mx-auto text-center">
             <div className="mb-8 sm:mb-12">
@@ -242,84 +66,23 @@ const EventsPage = () => {
                     Amazon 200 pe 200
                 </h1>
                 <h2 className="text-xl font-bold sm:text-2xl md:text-3xl lg:text-4xl mb-6" style={{ color: '#34D399' }}>
-                    Submit your order details
+                    Offers are over — see you in the next loot!
                 </h2>
                 <p className="text-sm sm:text-base md:text-lg text-white/90 max-w-2xl mx-auto leading-relaxed">
-                    Fill in the details below.
+                    Thanks for the massive response. We’ll announce the next drop soon. Stay tuned on our socials.
                 </p>
             </div>
 
-            <div className="max-w-2xl mx-auto mb-6">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <input type="text" required value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="Name" className="w-full bg-transparent border border-white/20 rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-white/40 text-sm transition-colors" />
-                        <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))} placeholder="Phone No" maxLength={10} inputMode="numeric" pattern="^\d{10}$" title="Enter 10-digit mobile number" className="w-full bg-transparent border border-white/20 rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-white/40 text-sm transition-colors" />
-                        <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full bg-transparent border border-white/20 rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-white/40 text-sm transition-colors" />
-                        <input type="text" required value={pinCode} onChange={(e) => setPinCode(e.target.value)} placeholder="Pin Code" inputMode="numeric" pattern="^\d{6}$" title="Enter 6-digit pin code" className="w-full bg-transparent border border-white/20 rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-white/40 text-sm transition-colors" />
-                        <input type="text" required value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} placeholder="Address Line 1" className="w-full bg-transparent border border-white/20 rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-white/40 text-sm transition-colors" />
-                        <input type="text" required value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} placeholder="Address Line 2" className="w-full bg-transparent border border-white/20 rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-white/40 text-sm transition-colors" />
-                        <input type="text" required value={landmark} onChange={(e) => setLandmark(e.target.value)} placeholder="Landmark" className="w-full bg-transparent border border-white/20 rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-white/40 text-sm transition-colors" />
-                        <input type="text" required value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" pattern="^[A-Za-z ]{2,}$" title="Enter a valid city" className="w-full bg-transparent border border-white/20 rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-white/40 text-sm transition-colors" />
-                        <input type="url" required value={productLink} onChange={(e) => setProductLink(e.target.value)} placeholder="Product Link" className="w-full bg-transparent border border-white/20 rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-white/40 text-sm transition-colors break-all" />
-                        <input type="text" required value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Product Name" className="w-full bg-transparent border border-white/20 rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-white/40 text-sm transition-colors" />
-                        <input type="number" step="0.01" min="200" required value={productAmount} onChange={(e) => setProductAmount(e.target.value)} placeholder="Product Amount (min ₹200)" className="w-full bg-transparent border border-white/20 rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-white/40 text-sm transition-colors" />
-                        <input type="text" required value={upiId} onChange={(e) => setUpiId(e.target.value)} placeholder="UPI ID" pattern="^[\w.-]{2,}@[A-Za-z]{2,}$" title="Enter valid UPI ID (e.g., name@bank)" className="w-full bg-transparent border border-white/20 rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-white/40 text-sm transition-colors" />
+            <div className="max-w-xl mx-auto mb-6">
+                <div className="rounded-xl border border-white/10 bg-white/5 p-5 text-white/90">
+                    Follow us on Instagram and WhatsApp for the next announcement.
+                    <div className="mt-4 flex items-center justify-center gap-4">
+                        <a aria-label="Instagram" className="hover:text-white transition-colors" href="https://www.instagram.com/cashvertz" target="_blank" rel="noopener noreferrer">Instagram</a>
+                        <span className="text-white/30">•</span>
+                        <a aria-label="WhatsApp" className="hover:text-white transition-colors" href="https://chat.whatsapp.com/LOcskbkvq5PCaZNHoJAoex" target="_blank" rel="noopener noreferrer">WhatsApp</a>
                     </div>
-
-                    <div className="text-left text-white/80 text-xs sm:text-sm">
-                        <p className="mb-1">- COD only. Minimum product value ₹200 (shipping excluded).</p>
-                        <p className="mb-1">- Up to 3 participations per month per phone+email pair.</p>
-                        <p className="mb-1">- Cashback ₹200 within 20–30 working days after delivery verification.</p>
-                    </div>
-
-                    <div className="flex items-start gap-3 text-left">
-                        <input id="agree" type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1 h-4 w-4" />
-                        <label htmlFor="agree" className="text-xs sm:text-sm text-white/80">
-                            I agree to accept the COD delivery and understand I’ll receive ₹200 cashback after successful delivery.
-                        </label>
-                    </div>
-
-                    <div className="flex flex-col items-center gap-3">
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="flex items-center justify-center gap-2 rounded-full px-8 h-12 text-sm font-semibold text-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            style={{ backgroundColor: '#34D399' }}
-                        >
-                            {isLoading ? (
-                                <>
-                                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-black border-t-transparent"></div>
-                                    <span>Submitting...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                        <path d="M12 2l2.1 4.7L19 8.9l-4.2 2L13 16l-1-5.1L7 8.9l4.9-2.2L12 2z" />
-                                    </svg>
-                                    <span>Submit</span>
-                                </>
-                            )}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => window.open('/terms', '_blank')}
-                            className="text-white/70 hover:text-white text-xs underline"
-                        >
-                            View Terms & Conditions
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            {error && (
-                <div className="text-sm text-red-400 mb-6">{error}</div>
-            )}
-
-            {submissionSuccess && (
-                <div className="text-sm text-green-300 mb-6">
-                    Submitted! We’ll review and get back to you shortly.
                 </div>
-            )}
+            </div>
 
             {/* Removed old event cards */}
         </div>
