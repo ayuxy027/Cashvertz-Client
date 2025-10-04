@@ -219,7 +219,7 @@ const ComingSoon = () => {
                 {/* Button to campaign */}
                 <div className="mt-8">
                     <a
-                        href="/amazon"
+                        href="/toing"
                         className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition-all duration-200 sm:px-8 sm:py-4 sm:text-base"
                         style={{ backgroundColor: '#66FFB2' }}
                     >
