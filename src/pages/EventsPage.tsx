@@ -531,7 +531,7 @@ const EventsPage = () => {
                             }`}
                         onClick={() => {
                             setHasClickedRedirect(true)
-                            window.open('https://swiggy.com', '_blank')
+                            window.open('https://pdg.gotrackier.com/click?campaign_id=797&pub_id=1338&source=community', '_blank')
                         }}
                     >
                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
