@@ -1,44 +1,45 @@
-import { useEffect } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from '../assets/logo-light.png'
 import bgSvg from '../assets/bg.svg'
-
+import { supabase } from '../lib/supabase'
 
 const EventsPage = () => {
     const navigate = useNavigate()
 
-    // Form fields removed (campaign closed)
-    const setUserName = (_: string) => { }
-    const setPhone = (_: string) => { }
-    const setEmail = (_: string) => { }
-    const setPinCode = (_: string) => { }
-    const setAddressLine1 = (_: string) => { }
-    const setAddressLine2 = (_: string) => { }
-    const setLandmark = (_: string) => { }
-    const setCity = (_: string) => { }
-    const setProductLink = (_: string) => { }
-    const setProductName = (_: string) => { }
-    const setProductAmount = (_: string) => { }
-    const setUpiId = (_: string) => { }
+    // Form fields (Swiggy campaign)
+    const [userName, setUserName] = useState('')
+    const [phone, setPhone] = useState('')
+    const [upiId, setUpiId] = useState('')
+    const [screenshot, setScreenshot] = useState<File | null>(null)
+    const [screenshotPreview, setScreenshotPreview] = useState<string>('')
 
     // UI state
-    // Form closed
+    const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState('')
+    const [submissionSuccess, setSubmissionSuccess] = useState(false)
+    const [agreed, setAgreed] = useState(false)
+
+    // Validation states
+    const [validationErrors, setValidationErrors] = useState<{
+        userName?: string
+        phone?: string
+        upiId?: string
+        screenshot?: string
+    }>({})
+
+    // Additional states for unbreakable flow
+    const [isValidatingUPI, setIsValidatingUPI] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [networkError, setNetworkError] = useState(false)
+    const [hasClickedRedirect, setHasClickedRedirect] = useState(false)
 
     // Restore form state from localStorage
     useEffect(() => {
         const map: Array<[string, (v: string) => void]> = [
-            ['amazon_userName', setUserName],
-            ['amazon_phone', setPhone],
-            ['amazon_email', setEmail],
-            ['amazon_pinCode', setPinCode],
-            ['amazon_addressLine1', setAddressLine1],
-            ['amazon_addressLine2', setAddressLine2],
-            ['amazon_landmark', setLandmark],
-            ['amazon_city', setCity],
-            ['amazon_productLink', setProductLink],
-            ['amazon_productName', setProductName],
-            ['amazon_productAmount', setProductAmount],
-            ['amazon_upiId', setUpiId],
+            ['swiggy_userName', setUserName],
+            ['swiggy_phone', setPhone],
+            ['swiggy_upiId', setUpiId],
         ]
         for (const [key, setter] of map) {
             const v = localStorage.getItem(key)
@@ -46,9 +47,407 @@ const EventsPage = () => {
                 setter(v)
             }
         }
+
+        // Restore redirect state
+        const hasClicked = localStorage.getItem('swiggy_hasClickedRedirect')
+        if (hasClicked === 'true') {
+            setHasClickedRedirect(true)
+        }
+
+        // Restore agreement state
+        const agreedState = localStorage.getItem('swiggy_agreed')
+        if (agreedState === 'true') {
+            setAgreed(true)
+        }
     }, [])
 
+    // Auto-save to localStorage on field changes
+    useEffect(() => {
+        if (userName) localStorage.setItem('swiggy_userName', userName)
+    }, [userName])
 
+    useEffect(() => {
+        if (phone) localStorage.setItem('swiggy_phone', phone)
+    }, [phone])
+
+    useEffect(() => {
+        if (upiId) localStorage.setItem('swiggy_upiId', upiId)
+    }, [upiId])
+
+    useEffect(() => {
+        if (agreed) localStorage.setItem('swiggy_agreed', 'true')
+    }, [agreed])
+
+    useEffect(() => {
+        if (hasClickedRedirect) localStorage.setItem('swiggy_hasClickedRedirect', 'true')
+    }, [hasClickedRedirect])
+
+    // Reset form function
+    const resetForm = useCallback(() => {
+        setUserName('')
+        setPhone('')
+        setUpiId('')
+        setScreenshot(null)
+        setScreenshotPreview('')
+        setAgreed(false)
+        setError('')
+        setValidationErrors({})
+        setIsValidatingUPI(false)
+        setIsSubmitting(false)
+        setNetworkError(false)
+        setSubmissionSuccess(false)
+        setHasClickedRedirect(false)
+
+        // Clear localStorage
+        localStorage.removeItem('swiggy_userName')
+        localStorage.removeItem('swiggy_phone')
+        localStorage.removeItem('swiggy_upiId')
+        localStorage.removeItem('swiggy_agreed')
+        localStorage.removeItem('swiggy_hasClickedRedirect')
+    }, [])
+
+    const validatePhone = useCallback((number: string): boolean => {
+        const cleaned = number.replace(/\D/g, '')
+        return /^\d{10}$/.test(cleaned) && /^[6-9]/.test(cleaned)
+    }, [])
+
+    const validateUPI = useCallback((upi: string): boolean => {
+        return /^[\w.-]{2,}@[A-Za-z]{2,}$/.test(upi.trim())
+    }, [])
+
+    const validateName = useCallback((name: string): boolean => {
+        const trimmed = name.trim()
+        return trimmed.length >= 2 && trimmed.length <= 50 && /^[A-Za-z\s]+$/.test(trimmed)
+    }, [])
+
+    const validateScreenshot = useCallback((file: File | null): boolean => {
+        if (!file) return false
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        const maxSize = 5 * 1024 * 1024 // 5MB
+        return validTypes.includes(file.type) && file.size <= maxSize
+    }, [])
+
+    // Comprehensive validation function
+    const validateAllFields = useCallback(() => {
+        const errors: typeof validationErrors = {}
+
+        // Name validation
+        if (!userName.trim()) {
+            errors.userName = 'Name is required'
+        } else if (!validateName(userName)) {
+            errors.userName = 'Name must be 2-50 characters, letters and spaces only'
+        }
+
+        // Phone validation
+        if (!phone.trim()) {
+            errors.phone = 'Mobile number is required'
+        } else if (!validatePhone(phone)) {
+            errors.phone = 'Enter a valid 10-digit mobile number starting with 6-9'
+        }
+
+        // UPI validation
+        if (!upiId.trim()) {
+            errors.upiId = 'UPI ID is required'
+        } else if (!validateUPI(upiId)) {
+            errors.upiId = 'Enter a valid UPI ID (e.g., name@bank)'
+        }
+
+        // Screenshot validation
+        if (!screenshot) {
+            errors.screenshot = 'Screenshot is required'
+        } else if (!validateScreenshot(screenshot)) {
+            errors.screenshot = 'Please upload a valid image file (max 5MB)'
+        }
+
+        setValidationErrors(errors)
+        return Object.keys(errors).length === 0
+    }, [userName, phone, upiId, screenshot, validateName, validatePhone, validateUPI, validateScreenshot])
+
+
+    const handleScreenshotUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            if (!validateScreenshot(file)) {
+                setValidationErrors(prev => ({
+                    ...prev,
+                    screenshot: 'Please upload a valid image file (max 5MB)'
+                }))
+                return
+            }
+            setScreenshot(file)
+            setValidationErrors(prev => ({ ...prev, screenshot: undefined }))
+            setError('')
+
+            // Create preview
+            const reader = new FileReader()
+            reader.onload = (e) => {
+                setScreenshotPreview(e.target?.result as string)
+            }
+            reader.readAsDataURL(file)
+        }
+    }, [validateScreenshot])
+
+    const canRedirectToApp = useCallback(() => {
+        return userName.trim() && validateName(userName) &&
+            phone.trim() && validatePhone(phone) &&
+            upiId.trim() && validateUPI(upiId)
+    }, [userName, phone, upiId, validateName, validatePhone, validateUPI])
+
+    const canSubmit = useCallback(() => {
+        return canRedirectToApp() && hasClickedRedirect && screenshot && validateScreenshot(screenshot) && agreed
+    }, [canRedirectToApp, hasClickedRedirect, screenshot, validateScreenshot, agreed])
+
+    // Real-time validation on field changes
+    const handleNameChange = useCallback((value: string) => {
+        setUserName(value)
+        if (value.trim()) {
+            setValidationErrors(prev => ({
+                ...prev,
+                userName: validateName(value) ? undefined : 'Name must be 2-50 characters, letters and spaces only'
+            }))
+        } else {
+            setValidationErrors(prev => ({ ...prev, userName: undefined }))
+        }
+    }, [validateName])
+
+    const handlePhoneChange = useCallback((value: string) => {
+        const cleaned = value.replace(/\D/g, '')
+        setPhone(cleaned)
+        if (cleaned) {
+            setValidationErrors(prev => ({
+                ...prev,
+                phone: validatePhone(cleaned) ? undefined : 'Enter a valid 10-digit mobile number starting with 6-9'
+            }))
+        } else {
+            setValidationErrors(prev => ({ ...prev, phone: undefined }))
+        }
+    }, [validatePhone])
+
+    // UPI validation with database check
+    const validateUPIUnique = useCallback(async (upi: string): Promise<boolean> => {
+        if (!validateUPI(upi)) return false
+
+        try {
+            setIsValidatingUPI(true)
+            // Check if UPI ID exists in any existing records
+            const { data, error } = await supabase
+                .from('swiggy_orders')
+                .select('id')
+                .eq('upi_id', upi.trim())
+                .limit(1)
+
+            if (error) {
+                console.error('UPI validation error:', error)
+                // If table doesn't exist or other error, allow the UPI for now
+                return true
+            }
+
+            return !data || data.length === 0
+        } catch (error) {
+            console.error('UPI validation network error:', error)
+            // On any error, allow the UPI to avoid blocking users
+            return true
+        } finally {
+            setIsValidatingUPI(false)
+        }
+    }, [validateUPI])
+
+    const handleUpiChange = useCallback((value: string) => {
+        setUpiId(value)
+        if (value.trim()) {
+            const isValidFormat = validateUPI(value)
+            setValidationErrors(prev => ({
+                ...prev,
+                upiId: isValidFormat ? undefined : 'Enter a valid UPI ID (e.g., name@bank)'
+            }))
+
+            // Debounced UPI uniqueness check
+            if (isValidFormat) {
+                const timeoutId = setTimeout(async () => {
+                    const isUnique = await validateUPIUnique(value)
+                    if (!isUnique) {
+                        setValidationErrors(prev => ({
+                            ...prev,
+                            upiId: 'This UPI ID has already been used for an order'
+                        }))
+                    }
+                }, 1000)
+
+                return () => clearTimeout(timeoutId)
+            }
+        } else {
+            setValidationErrors(prev => ({ ...prev, upiId: undefined }))
+        }
+    }, [validateUPI, validateUPIUnique])
+
+    const handleSubmit = useCallback(async (e: React.FormEvent) => {
+        e.preventDefault()
+        setError('')
+        setNetworkError(false)
+        setIsLoading(true)
+        setIsSubmitting(true)
+
+        try {
+            // Comprehensive validation
+            if (!validateAllFields()) {
+                setError('Please fix all validation errors before submitting')
+                setIsLoading(false)
+                setIsSubmitting(false)
+                return
+            }
+
+            // Check UPI uniqueness one more time before submission
+            const isUPIUnique = await validateUPIUnique(upiId)
+            if (!isUPIUnique) {
+                setError('This UPI ID has already been used for an order. Please use a different UPI ID.')
+                setIsLoading(false)
+                setIsSubmitting(false)
+                return
+            }
+
+            // Final validation checks
+            if (!userName.trim() || !phone.trim() || !upiId.trim()) {
+                setError('Please fill in all required fields')
+                setIsLoading(false)
+                setIsSubmitting(false)
+                return
+            }
+
+            if (!hasClickedRedirect) {
+                setError('Please click "Redirect to App" before submitting')
+                setIsLoading(false)
+                setIsSubmitting(false)
+                return
+            }
+
+            if (!screenshot) {
+                setError('Please upload a screenshot before submitting')
+                setIsLoading(false)
+                setIsSubmitting(false)
+                return
+            }
+
+            if (!agreed) {
+                setError('Please agree to the Terms & Conditions before submitting')
+                setIsLoading(false)
+                setIsSubmitting(false)
+                return
+            }
+
+            // Upload screenshot to Supabase storage with retry logic
+            let screenshotUrl = ''
+            if (screenshot) {
+                const fileExt = screenshot.name.split('.').pop()
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+
+                let uploadAttempts = 0
+                const maxUploadAttempts = 3
+
+                while (uploadAttempts < maxUploadAttempts) {
+                    try {
+                        const { error: uploadError } = await supabase.storage
+                            .from('swiggy-screenshots')
+                            .upload(fileName, screenshot)
+
+                        if (uploadError) {
+                            uploadAttempts++
+                            if (uploadAttempts >= maxUploadAttempts) {
+                                setError('Failed to upload screenshot. Please try again with a smaller file.')
+                                setIsLoading(false)
+                                setIsSubmitting(false)
+                                return
+                            }
+                            await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second before retry
+                            continue
+                        }
+
+                        const { data: { publicUrl } } = supabase.storage
+                            .from('swiggy-screenshots')
+                            .getPublicUrl(fileName)
+
+                        screenshotUrl = publicUrl
+                        break
+                    } catch (uploadErr) {
+                        uploadAttempts++
+                        if (uploadAttempts >= maxUploadAttempts) {
+                            setError('Network error during screenshot upload. Please check your connection and try again.')
+                            setNetworkError(true)
+                            setIsLoading(false)
+                            setIsSubmitting(false)
+                            return
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 1000))
+                    }
+                }
+            }
+
+            // Check if mobile number already exists (to prevent multiple orders from same number)
+            const existingOrderCheck = await supabase
+                .from('swiggy_orders')
+                .select('id')
+                .eq('mobile_number', phone.trim())
+                .limit(1)
+
+            if (existingOrderCheck.error) {
+                console.error('Existing order check error:', existingOrderCheck.error)
+                setError('Network error during validation. Please try again.')
+                setNetworkError(true)
+                setIsLoading(false)
+                setIsSubmitting(false)
+                return
+            } else if (existingOrderCheck.data && existingOrderCheck.data.length > 0) {
+                setError('This mobile number has already been used for an order. Please use a different mobile number.')
+                setIsLoading(false)
+                setIsSubmitting(false)
+                return
+            }
+
+            // Insert order with transaction-like approach
+            const { error: insertErr } = await supabase.from('swiggy_orders').insert([
+                {
+                    user_name: userName.trim(),
+                    mobile_number: phone.trim(),
+                    upi_id: upiId.trim(),
+                    screenshot_url: screenshotUrl,
+                    has_redirected: hasClickedRedirect,
+                    status: 'submitted',
+                },
+            ])
+
+            if (insertErr) {
+                // Handle specific database errors
+                if (insertErr.code === '23505') { // Unique constraint violation
+                    if (insertErr.message.includes('unique_mobile_number')) {
+                        setError('This mobile number has already been used for an order. Please use a different mobile number.')
+                    } else if (insertErr.message.includes('unique_upi_id')) {
+                        setError('This UPI ID has already been used for an order. Please use a different UPI ID.')
+                    } else {
+                        setError('This information has already been used for an order. Please use different details.')
+                    }
+                } else if (insertErr.code === 'PGRST301') {
+                    setError('Database connection error. Please try again in a few moments.')
+                    setNetworkError(true)
+                } else {
+                    setError('Failed to submit. Please try again.')
+                }
+                setIsLoading(false)
+                setIsSubmitting(false)
+                return
+            }
+
+            // Clear form and localStorage on success
+            resetForm()
+            setSubmissionSuccess(true)
+
+        } catch (error) {
+            console.error('Submission error:', error)
+            setNetworkError(true)
+            setError('An unexpected error occurred. Please check your connection and try again. If the problem persists, contact support.')
+        } finally {
+            setIsLoading(false)
+            setIsSubmitting(false)
+        }
+    }, [validateAllFields, validateUPIUnique, screenshot, userName, phone, upiId, hasClickedRedirect, agreed, resetForm])
 
     // Keep compatibility with any earlier prefill
     useEffect(() => {
@@ -60,31 +459,301 @@ const EventsPage = () => {
     }, [])
 
     const renderForm = () => (
+        <div className="max-w-2xl mx-auto mb-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Personal Details Section */}
+                <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white mb-3">Personal Details</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <input
+                                type="text"
+                                required
+                                value={userName}
+                                onChange={(e) => handleNameChange(e.target.value)}
+                                placeholder="Full Name"
+                                className={`w-full bg-transparent border rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none text-sm transition-colors ${validationErrors.userName
+                                    ? 'border-red-400 focus:border-red-300'
+                                    : 'border-white/20 focus:border-white/40'
+                                    }`}
+                            />
+                            {validationErrors.userName && (
+                                <p className="text-red-400 text-xs px-4">{validationErrors.userName}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-1">
+                            <input
+                                type="tel"
+                                required
+                                value={phone}
+                                onChange={(e) => handlePhoneChange(e.target.value)}
+                                placeholder="Mobile Number"
+                                maxLength={10}
+                                inputMode="numeric"
+                                className={`w-full bg-transparent border rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none text-sm transition-colors ${validationErrors.phone
+                                    ? 'border-red-400 focus:border-red-300'
+                                    : 'border-white/20 focus:border-white/40'
+                                    }`}
+                            />
+                            {validationErrors.phone && (
+                                <p className="text-red-400 text-xs px-4">{validationErrors.phone}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-1 sm:col-span-2">
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    required
+                                    value={upiId}
+                                    onChange={(e) => handleUpiChange(e.target.value)}
+                                    placeholder="UPI ID (e.g., name@bank)"
+                                    className={`w-full bg-transparent border rounded-full px-4 py-3 pr-10 text-white placeholder:text-white/50 focus:outline-none text-sm transition-colors ${validationErrors.upiId
+                                        ? 'border-red-400 focus:border-red-300'
+                                        : 'border-white/20 focus:border-white/40'
+                                        }`}
+                                />
+                                {isValidatingUPI && (
+                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+                                    </div>
+                                )}
+                            </div>
+                            {validationErrors.upiId && (
+                                <p className="text-red-400 text-xs px-4">{validationErrors.upiId}</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Redirect to App Button */}
+                <div className="flex justify-center">
+                    <button
+                        type="button"
+                        disabled={!canRedirectToApp()}
+                        className="flex items-center justify-center gap-2 rounded-full px-8 h-12 text-sm font-semibold text-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ backgroundColor: canRedirectToApp() ? '#34D399' : '#666' }}
+                        onClick={() => {
+                            setHasClickedRedirect(true)
+                            // This could open Swiggy app or show instructions
+                            window.open('https://swiggy.com', '_blank')
+                        }}
+                    >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M12 2l2.1 4.7L19 8.9l-4.2 2L13 16l-1-5.1L7 8.9l4.9-2.2L12 2z" />
+                        </svg>
+                        <span>{hasClickedRedirect ? 'Redirected ✓' : 'Redirect to App'}</span>
+                    </button>
+                </div>
+
+                {/* Screenshot Upload Section */}
+                <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white mb-3">Upload Screenshot</h3>
+                    <div className="text-left text-white/80 text-xs sm:text-sm mb-4">
+                        <p className="mb-1">- Upload a clear screenshot of your Swiggy order</p>
+                        <p className="mb-1">- Make sure order details are clearly visible</p>
+                        <p className="mb-1">- File size should be less than 5MB</p>
+                        <p className="mb-1">- Supported formats: JPG, PNG, GIF, WebP</p>
+                        {!hasClickedRedirect && (
+                            <p className="mb-1 text-yellow-400 font-medium">⚠️ Please click "Redirect to App" first to unlock screenshot upload</p>
+                        )}
+                    </div>
+
+                    <div className="space-y-1">
+                        <div className={`upload-area border-2 border-dashed rounded-lg p-6 text-center transition-colors ${!hasClickedRedirect
+                            ? 'border-gray-500 bg-gray-900/20 cursor-not-allowed opacity-50'
+                            : validationErrors.screenshot
+                                ? 'border-red-400'
+                                : 'border-white/30 hover:border-white/50'
+                            }`}>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleScreenshotUpload}
+                                className="hidden"
+                                id="screenshot-upload"
+                                disabled={!hasClickedRedirect}
+                            />
+                            <label
+                                htmlFor="screenshot-upload"
+                                className={`block ${!hasClickedRedirect ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                            >
+                                {!hasClickedRedirect ? (
+                                    <div className="space-y-3">
+                                        <svg className="w-12 h-12 mx-auto text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                        </svg>
+                                        <p className="text-gray-500 text-sm">Screenshot upload locked</p>
+                                        <p className="text-gray-400 text-xs">Click "Redirect to App" first</p>
+                                    </div>
+                                ) : screenshotPreview ? (
+                                    <div className="space-y-3">
+                                        <img
+                                            src={screenshotPreview}
+                                            alt="Screenshot preview"
+                                            className="max-w-full max-h-64 mx-auto rounded-lg"
+                                        />
+                                        <p className="text-white/80 text-sm">Click to change screenshot</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <svg className="w-12 h-12 mx-auto text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                        </svg>
+                                        <p className="text-white/80 text-sm">Click to upload screenshot</p>
+                                    </div>
+                                )}
+                            </label>
+                        </div>
+                        {validationErrors.screenshot && (
+                            <p className="text-red-400 text-xs px-4">{validationErrors.screenshot}</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Terms and Conditions */}
+                <div className="flex items-start gap-3 text-left">
+                    <input
+                        id="agree"
+                        type="checkbox"
+                        checked={agreed}
+                        onChange={(e) => setAgreed(e.target.checked)}
+                        className="mt-1 h-4 w-4"
+                    />
+                    <label htmlFor="agree" className="text-xs sm:text-sm text-white/80">
+                        I agree to the Terms & Conditions and understand that cashback will be processed after verification.
+                    </label>
+                </div>
+
+                {/* Submit Button */}
+                <div className="flex flex-col items-center gap-3">
+                    <button
+                        type="submit"
+                        disabled={!canSubmit() || isLoading || isSubmitting}
+                        className="flex items-center justify-center gap-2 rounded-full px-8 h-12 text-sm font-semibold text-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ backgroundColor: canSubmit() && !isSubmitting ? '#34D399' : '#666' }}
+                    >
+                        {isLoading || isSubmitting ? (
+                            <>
+                                <div className="w-4 h-4 animate-spin rounded-full border-2 border-black border-t-transparent"></div>
+                                <span>{isSubmitting ? 'Submitting...' : 'Processing...'}</span>
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                    <path d="M12 2l2.1 4.7L19 8.9l-4.2 2L13 16l-1-5.1L7 8.9l4.9-2.2L12 2z" />
+                                </svg>
+                                <span>Submit</span>
+                            </>
+                        )}
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => window.open('/terms', '_blank')}
+                        className="text-white/70 hover:text-white text-xs underline"
+                    >
+                        View Terms & Conditions
+                    </button>
+                </div>
+            </form>
+        </div>
+    )
+
+    const renderMainForm = () => (
         <div className="max-w-4xl mx-auto text-center">
             <div className="mb-8 sm:mb-12">
-                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl mb-3" style={{ color: '#34D399' }}>
-                    Amazon 200 pe 200
-                </h1>
-                <h2 className="text-xl font-bold sm:text-2xl md:text-3xl lg:text-4xl mb-6" style={{ color: '#34D399' }}>
-                    Offers are over — see you in the next loot!
-                </h2>
+                <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1"></div>
+                    <div className="flex-1 text-center">
+                        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl mb-3" style={{ color: '#34D399' }}>
+                            Toing By Swiggy
+                        </h1>
+                        <h2 className="text-xl font-bold sm:text-2xl md:text-3xl lg:text-4xl mb-6" style={{ color: '#34D399' }}>
+                            Submit your order details
+                        </h2>
+                    </div>
+                    <div className="flex-1 flex justify-end">
+                        <button
+                            type="button"
+                            onClick={resetForm}
+                            className="text-red-400 hover:text-red-300 text-sm underline px-3 py-2 rounded-lg hover:bg-red-900/20 transition-colors"
+                            disabled={isLoading || isSubmitting}
+                        >
+                            Reset Form
+                        </button>
+                    </div>
+                </div>
                 <p className="text-sm sm:text-base md:text-lg text-white/90 max-w-2xl mx-auto leading-relaxed">
-                    Thanks for the massive response. We’ll announce the next drop soon. Stay tuned on our socials.
+                    Fill in your details and upload a screenshot of your Swiggy order to get started.
                 </p>
             </div>
 
-            <div className="max-w-xl mx-auto mb-6">
-                <div className="rounded-xl border border-white/10 bg-white/5 p-5 text-white/90">
-                    Follow us on Instagram and WhatsApp for the next announcement.
-                    <div className="mt-4 flex items-center justify-center gap-4">
-                        <a aria-label="Instagram" className="hover:text-white transition-colors" href="https://www.instagram.com/cashvertz" target="_blank" rel="noopener noreferrer">Instagram</a>
-                        <span className="text-white/30">•</span>
-                        <a aria-label="WhatsApp" className="hover:text-white transition-colors" href="https://chat.whatsapp.com/LOcskbkvq5PCaZNHoJAoex" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+            {renderForm()}
+
+            {error && (
+                <div className={`text-sm mb-6 max-w-2xl mx-auto p-4 rounded-lg ${networkError
+                    ? 'bg-red-900/20 border border-red-400/30 text-red-300'
+                    : 'bg-red-900/20 border border-red-400/30 text-red-400'
+                    }`}>
+                    <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <span>{error}</span>
+                    </div>
+                    {networkError && (
+                        <p className="text-xs mt-2 text-red-300/80">
+                            Please check your internet connection and try again. If the problem persists, contact support.
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {submissionSuccess && (
+                <div className="text-center max-w-2xl mx-auto p-8 rounded-lg bg-green-900/20 border border-green-400/30">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
+                            <svg className="w-8 h-8 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-bold text-green-400">Congratulations!</h3>
+                            <p className="text-lg text-green-300">Your submission has been recorded successfully</p>
+                        </div>
+
+                        <div className="text-sm text-white/80 space-y-1">
+                            <p>🎉 Thank you for participating in our Swiggy Cashback Campaign!</p>
+                            <p>📋 Your order details have been submitted for verification</p>
+                            <p>⏰ Cashback will be processed within 15-20 working days</p>
+                            <p>📱 You'll receive updates via SMS on your registered mobile number</p>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                            <button
+                                onClick={() => window.open('/terms', '_blank')}
+                                className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-400/30 rounded-lg text-green-300 text-sm transition-colors"
+                            >
+                                View Terms & Conditions
+                            </button>
+                            <button
+                                onClick={() => window.open('https://chat.whatsapp.com/LOcskbkvq5PCaZNHoJAoex', '_blank')}
+                                className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 rounded-lg text-blue-300 text-sm transition-colors"
+                            >
+                                Contact Support
+                            </button>
+                        </div>
+
+                        <div className="text-xs text-white/60 mt-4">
+                            <p>Keep your mobile number handy for cashback updates</p>
+                            <p>For any queries, contact us via WhatsApp</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            {/* Removed old event cards */}
+            )}
         </div>
     )
 
@@ -136,7 +805,7 @@ const EventsPage = () => {
 
             {/* Main content */}
             <main className="px-4 py-8 sm:px-6 sm:py-16">
-                {renderForm()}
+                {renderMainForm()}
             </main>
 
             <style>{`

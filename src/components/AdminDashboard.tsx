@@ -6,19 +6,12 @@ import bgSvg from '../assets/bg.svg'
 interface AdminSubmission {
     id: string
     user_name: string
-    phone: string
-    email: string | null
-    pin_code: string
-    address_line_1: string
-    address_line_2: string | null
-    landmark: string | null
-    city: string
-    product_link: string | null
-    product_name: string
-    product_amount: number
+    mobile_number: string
     upi_id: string
     screenshot_url: string | null
     status: string
+    has_redirected: boolean
+    progress_stage: 'details_entered' | 'redirected' | 'screenshot_uploaded' | 'pending_approval' | 'approved' | 'rejected'
     created_at: string
     updated_at: string
 }
@@ -42,20 +35,21 @@ const AdminDashboard = () => {
         try {
             setLoading(true)
             const { data, error } = await supabase
-                .from('amazon_orders_view')
+                .from('swiggy_orders_admin_view')
                 .select('*')
                 .order('created_at', { ascending: false })
 
             if (error) {
                 throw error
             }
+
             setSubmissions(data || [])
 
             // Calculate statistics
             const total = data?.length || 0
-            const pending = data?.filter(s => s.status === 'submitted').length || 0
-            const approved = data?.filter(s => s.status === 'reviewed').length || 0
-            const rejected = data?.filter(s => s.status === 'rejected').length || 0
+            const pending = data?.filter(s => s.progress_stage === 'pending_approval').length || 0
+            const approved = data?.filter(s => s.progress_stage === 'approved').length || 0
+            const rejected = data?.filter(s => s.progress_stage === 'rejected').length || 0
 
             setStats({ total, pending, approved, rejected })
         } catch {
@@ -68,8 +62,8 @@ const AdminDashboard = () => {
     const approveSubmission = async (id: string) => {
         try {
             const { error } = await supabase
-                .from('amazon_orders')
-                .update({ status: 'reviewed' })
+                .from('swiggy_orders')
+                .update({ status: 'approved' })
                 .eq('id', id)
 
             if (error) {
@@ -84,7 +78,7 @@ const AdminDashboard = () => {
     const rejectSubmission = async (id: string) => {
         try {
             const { error } = await supabase
-                .from('amazon_orders')
+                .from('swiggy_orders')
                 .update({ status: 'rejected' })
                 .eq('id', id)
 
@@ -100,8 +94,8 @@ const AdminDashboard = () => {
     const approveAll = async () => {
         try {
             const { error } = await supabase
-                .from('amazon_orders')
-                .update({ status: 'reviewed' })
+                .from('swiggy_orders')
+                .update({ status: 'approved' })
                 .eq('status', 'submitted')
 
             if (error) {
@@ -116,7 +110,7 @@ const AdminDashboard = () => {
     const rejectAll = async () => {
         try {
             const { error } = await supabase
-                .from('amazon_orders')
+                .from('swiggy_orders')
                 .update({ status: 'rejected' })
                 .eq('status', 'submitted')
 
@@ -184,7 +178,7 @@ const AdminDashboard = () => {
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-8">
                         <h2 className="text-3xl font-bold mb-2" style={{ color: '#34D399' }}>
-                            Amazon Orders
+                            Swiggy Orders
                         </h2>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <p className="text-white/80">Manage and review user submissions</p>
@@ -237,13 +231,13 @@ const AdminDashboard = () => {
                                 <thead>
                                     <tr className="border-b border-white/20">
                                         <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                                            User
+                                            User Details
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                                            Order Details
+                                            Progress
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
-                                            UPI ID
+                                            Screenshot
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                                             Status
@@ -260,43 +254,49 @@ const AdminDashboard = () => {
                                                 <div className="text-sm font-medium text-white">
                                                     {submission.user_name}
                                                 </div>
-                                                <div className="text-sm text-white/60">{submission.phone}</div>
-                                                {submission.email && (
-                                                    <div className="text-xs text-white/40">{submission.email}</div>
-                                                )}
+                                                <div className="text-sm text-white/60">{submission.mobile_number}</div>
+                                                <div className="text-sm text-white/70">
+                                                    <strong>UPI:</strong> {submission.upi_id}
+                                                </div>
                                                 <div className="text-xs text-white/50">
                                                     Submitted: {new Date(submission.created_at).toLocaleString()}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="text-sm text-white/80">{submission.address_line_1}</div>
-                                                {submission.address_line_2 && (
-                                                    <div className="text-sm text-white/60">{submission.address_line_2}</div>
-                                                )}
-                                                {submission.landmark && (
-                                                    <div className="text-sm text-white/60">{submission.landmark}</div>
-                                                )}
-                                                <div className="text-sm text-white">{submission.city} - {submission.pin_code}</div>
-                                                <div className="text-sm text-white/80 mt-2">
-                                                    <strong>Product:</strong> {submission.product_name}
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-3 h-3 rounded-full ${submission.has_redirected ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                                                        <span className="text-sm text-white/80">
+                                                            {submission.has_redirected ? 'Redirected to App' : 'Not Redirected'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-3 h-3 rounded-full ${submission.screenshot_url ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                                                        <span className="text-sm text-white/80">
+                                                            {submission.screenshot_url ? 'Screenshot Uploaded' : 'No Screenshot'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-white/60">
+                                                        Stage: {submission.progress_stage.replace('_', ' ').toUpperCase()}
+                                                    </div>
                                                 </div>
-                                                <div className="text-sm text-white/80">
-                                                    <strong>Amount:</strong> ₹{submission.product_amount}
-                                                </div>
-                                                <div className="text-sm text-white/70">
-                                                    <strong>UPI:</strong> {submission.upi_id}
-                                                </div>
-                                                {submission.product_link && (
-                                                    <a href={submission.product_link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline text-xs">
-                                                        View Product Link
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {submission.screenshot_url ? (
+                                                    <a
+                                                        href={submission.screenshot_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-blue-400 hover:text-blue-300 underline text-sm"
+                                                    >
+                                                        View Screenshot
                                                     </a>
+                                                ) : (
+                                                    <span className="text-sm text-white/40">No Screenshot</span>
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-sm text-white">{submission.upi_id}</span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${submission.status === 'reviewed'
+                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${submission.status === 'approved'
                                                     ? 'bg-green-500/20 text-green-300 border border-green-400/30'
                                                     : submission.status === 'submitted'
                                                         ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-400/30'
