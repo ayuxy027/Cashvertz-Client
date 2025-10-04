@@ -141,7 +141,7 @@ const EventsPage = () => {
         if (!phone.trim()) {
             errors.phone = 'Mobile number is required'
         } else if (!validatePhone(phone)) {
-            errors.phone = 'Enter a valid 10-digit mobile number starting with 6-9'
+            errors.phone = 'Enter a valid 10-digit mobile number'
         }
 
         // UPI validation
@@ -216,7 +216,7 @@ const EventsPage = () => {
         if (cleaned) {
             setValidationErrors(prev => ({
                 ...prev,
-                phone: validatePhone(cleaned) ? undefined : 'Enter a valid 10-digit mobile number starting with 6-9'
+                phone: validatePhone(cleaned) ? undefined : 'Enter a valid 10-digit mobile number'
             }))
         } else {
             setValidationErrors(prev => ({ ...prev, phone: undefined }))
@@ -452,30 +452,30 @@ const EventsPage = () => {
     }, [])
 
     const renderForm = () => (
-        <div className="max-w-2xl mx-auto mb-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="w-full max-w-4xl mx-auto mb-8">
+            <form onSubmit={handleSubmit} className="space-y-8">
                 {/* Personal Details Section */}
-                <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white mb-3">Personal Details</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1">
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-white/10">
+                    <h3 className="text-xl font-semibold text-white mb-6 text-center">Personal Details</h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="space-y-2">
                             <input
                                 type="text"
                                 required
                                 value={userName}
                                 onChange={(e) => handleNameChange(e.target.value)}
                                 placeholder="Full Name"
-                                className={`w-full bg-transparent border rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none text-sm transition-colors ${validationErrors.userName
-                                    ? 'border-red-400 focus:border-red-300'
-                                    : 'border-white/20 focus:border-white/40'
+                                className={`w-full bg-white/10 border rounded-xl px-4 py-4 text-white placeholder:text-white/60 focus:outline-none text-base transition-all duration-200 ${validationErrors.userName
+                                    ? 'border-red-400 focus:border-red-300 bg-red-500/10'
+                                    : 'border-white/30 focus:border-green-400 focus:bg-white/15'
                                     }`}
                             />
                             {validationErrors.userName && (
-                                <p className="text-red-400 text-xs px-4">{validationErrors.userName}</p>
+                                <p className="text-red-400 text-sm px-2">{validationErrors.userName}</p>
                             )}
                         </div>
 
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                             <input
                                 type="tel"
                                 required
@@ -484,17 +484,17 @@ const EventsPage = () => {
                                 placeholder="Mobile Number"
                                 maxLength={10}
                                 inputMode="numeric"
-                                className={`w-full bg-transparent border rounded-full px-4 py-3 text-white placeholder:text-white/50 focus:outline-none text-sm transition-colors ${validationErrors.phone
-                                    ? 'border-red-400 focus:border-red-300'
-                                    : 'border-white/20 focus:border-white/40'
+                                className={`w-full bg-white/10 border rounded-xl px-4 py-4 text-white placeholder:text-white/60 focus:outline-none text-base transition-all duration-200 ${validationErrors.phone
+                                    ? 'border-red-400 focus:border-red-300 bg-red-500/10'
+                                    : 'border-white/30 focus:border-green-400 focus:bg-white/15'
                                     }`}
                             />
                             {validationErrors.phone && (
-                                <p className="text-red-400 text-xs px-4">{validationErrors.phone}</p>
+                                <p className="text-red-400 text-sm px-2">{validationErrors.phone}</p>
                             )}
                         </div>
 
-                        <div className="space-y-1 sm:col-span-2">
+                        <div className="space-y-2 lg:col-span-2">
                             <div className="relative">
                                 <input
                                     type="text"
@@ -502,19 +502,19 @@ const EventsPage = () => {
                                     value={upiId}
                                     onChange={(e) => handleUpiChange(e.target.value)}
                                     placeholder="UPI ID (e.g., name@bank)"
-                                    className={`w-full bg-transparent border rounded-full px-4 py-3 pr-10 text-white placeholder:text-white/50 focus:outline-none text-sm transition-colors ${validationErrors.upiId
-                                        ? 'border-red-400 focus:border-red-300'
-                                        : 'border-white/20 focus:border-white/40'
+                                    className={`w-full bg-white/10 border rounded-xl px-4 py-4 pr-12 text-white placeholder:text-white/60 focus:outline-none text-base transition-all duration-200 ${validationErrors.upiId
+                                        ? 'border-red-400 focus:border-red-300 bg-red-500/10'
+                                        : 'border-white/30 focus:border-green-400 focus:bg-white/15'
                                         }`}
                                 />
                                 {isValidatingUPI && (
-                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></div>
+                                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                                        <div className="w-5 h-5 animate-spin rounded-full border-2 border-white/30 border-t-green-400"></div>
                                     </div>
                                 )}
                             </div>
                             {validationErrors.upiId && (
-                                <p className="text-red-400 text-xs px-4">{validationErrors.upiId}</p>
+                                <p className="text-red-400 text-sm px-2">{validationErrors.upiId}</p>
                             )}
                         </div>
                     </div>
@@ -525,15 +525,16 @@ const EventsPage = () => {
                     <button
                         type="button"
                         disabled={!canRedirectToApp()}
-                        className="flex items-center justify-center gap-2 rounded-full px-8 h-12 text-sm font-semibold text-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ backgroundColor: canRedirectToApp() ? '#34D399' : '#666' }}
+                        className={`flex items-center justify-center gap-3 rounded-xl px-8 py-4 text-base font-semibold transition-all duration-200 min-w-[200px] ${canRedirectToApp()
+                            ? 'bg-gradient-to-r from-green-400 to-green-500 text-black hover:from-green-300 hover:to-green-400 shadow-lg hover:shadow-green-500/25 transform hover:scale-105'
+                            : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                            }`}
                         onClick={() => {
                             setHasClickedRedirect(true)
-                            // Open Swiggy in new tab
                             window.open('https://swiggy.com', '_blank')
                         }}
                     >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                             <path d="M12 2l2.1 4.7L19 8.9l-4.2 2L13 16l-1-5.1L7 8.9l4.9-2.2L12 2z" />
                         </svg>
                         <span>{hasClickedRedirect ? 'Redirected ✓' : 'Redirect to App'}</span>
@@ -541,24 +542,49 @@ const EventsPage = () => {
                 </div>
 
                 {/* Screenshot Upload Section */}
-                <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white mb-3">Upload Screenshot</h3>
-                    <div className="text-left text-white/80 text-xs sm:text-sm mb-4">
-                        <p className="mb-1">- Upload a clear screenshot of your Swiggy order</p>
-                        <p className="mb-1">- Make sure order details are clearly visible</p>
-                        <p className="mb-1">- File size limit removed for better quality</p>
-                        <p className="mb-1">- Supported formats: JPG, PNG, GIF, WebP</p>
-                        {!hasClickedRedirect && (
-                            <p className="mb-1 text-yellow-400 font-medium">⚠️ Please click "Redirect to App" first to unlock screenshot upload</p>
-                        )}
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-white/10">
+                    <h3 className="text-xl font-semibold text-white mb-6 text-center">Upload Screenshot</h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-white/80 text-sm">
+                                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                                <span>Upload a clear screenshot of your Swiggy order</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-white/80 text-sm">
+                                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                                <span>Make sure order details are clearly visible</span>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-white/80 text-sm">
+                                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                                <span>File size limit removed for better quality</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-white/80 text-sm">
+                                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                                <span>Supported formats: JPG, PNG, GIF, WebP</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="space-y-1">
-                        <div className={`upload-area border-2 border-dashed rounded-lg p-6 text-center transition-colors ${!hasClickedRedirect
+                    {!hasClickedRedirect && (
+                        <div className="bg-yellow-500/10 border border-yellow-400/30 rounded-xl p-4 mb-6">
+                            <div className="flex items-center gap-3">
+                                <svg className="w-5 h-5 text-yellow-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                                <p className="text-yellow-400 font-medium">Please click "Redirect to App" first to unlock screenshot upload</p>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="space-y-3">
+                        <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${!hasClickedRedirect
                             ? 'border-gray-500 bg-gray-900/20 cursor-not-allowed opacity-50'
                             : validationErrors.screenshot
-                                ? 'border-red-400'
-                                : 'border-white/30 hover:border-white/50'
+                                ? 'border-red-400 bg-red-500/10'
+                                : 'border-white/30 hover:border-green-400 hover:bg-white/5'
                             }`}>
                             <input
                                 type="file"
@@ -573,112 +599,126 @@ const EventsPage = () => {
                                 className={`block ${!hasClickedRedirect ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                             >
                                 {!hasClickedRedirect ? (
-                                    <div className="space-y-3">
-                                        <svg className="w-12 h-12 mx-auto text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                        </svg>
-                                        <p className="text-gray-500 text-sm">Screenshot upload locked</p>
-                                        <p className="text-gray-400 text-xs">Click "Redirect to App" first</p>
+                                    <div className="space-y-4">
+                                        <div className="w-16 h-16 mx-auto bg-gray-600 rounded-full flex items-center justify-center">
+                                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-400 text-base font-medium">Screenshot upload locked</p>
+                                            <p className="text-gray-500 text-sm">Click "Redirect to App" first</p>
+                                        </div>
                                     </div>
                                 ) : screenshotPreview ? (
-                                    <div className="space-y-3">
+                                    <div className="space-y-4">
                                         <img
                                             src={screenshotPreview}
                                             alt="Screenshot preview"
-                                            className="max-w-full max-h-64 mx-auto rounded-lg"
+                                            className="max-w-full max-h-64 mx-auto rounded-lg shadow-lg"
                                         />
                                         <p className="text-white/80 text-sm">Click to change screenshot</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-3">
-                                        <svg className="w-12 h-12 mx-auto text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                        </svg>
-                                        <p className="text-white/80 text-sm">Click to upload screenshot</p>
+                                    <div className="space-y-4">
+                                        <div className="w-16 h-16 mx-auto bg-green-500/20 rounded-full flex items-center justify-center">
+                                            <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p className="text-white/90 text-base font-medium">Click to upload screenshot</p>
+                                            <p className="text-white/60 text-sm">Drag and drop or click to browse</p>
+                                        </div>
                                     </div>
                                 )}
                             </label>
                         </div>
                         {validationErrors.screenshot && (
-                            <p className="text-red-400 text-xs px-4">{validationErrors.screenshot}</p>
+                            <p className="text-red-400 text-sm px-2">{validationErrors.screenshot}</p>
                         )}
                     </div>
                 </div>
 
                 {/* Terms and Conditions */}
-                <div className="flex items-start gap-3 text-left">
-                    <input
-                        id="agree"
-                        type="checkbox"
-                        checked={agreed}
-                        onChange={(e) => setAgreed(e.target.checked)}
-                        className="mt-1 h-4 w-4"
-                    />
-                    <label htmlFor="agree" className="text-xs sm:text-sm text-white/80">
-                        I agree to the Terms & Conditions and understand that cashback will be processed after verification.
-                    </label>
-                </div>
+                <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-white/10">
+                    <div className="flex items-start gap-4 text-left">
+                        <input
+                            id="agree"
+                            type="checkbox"
+                            checked={agreed}
+                            onChange={(e) => setAgreed(e.target.checked)}
+                            className="mt-1 h-5 w-5 rounded border-white/30 bg-white/10 text-green-400 focus:ring-green-400 focus:ring-2"
+                        />
+                        <label htmlFor="agree" className="text-sm text-white/80 leading-relaxed">
+                            I agree to the Terms & Conditions and understand that cashback will be processed after verification.
+                        </label>
+                    </div>
 
-                {/* Submit Button */}
-                <div className="flex flex-col items-center gap-3">
-                    <button
-                        type="submit"
-                        disabled={!canSubmit() || isLoading || isSubmitting}
-                        className="flex items-center justify-center gap-2 rounded-full px-8 h-12 text-sm font-semibold text-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ backgroundColor: canSubmit() && !isSubmitting ? '#34D399' : '#666' }}
-                    >
-                        {isLoading || isSubmitting ? (
-                            <>
-                                <div className="w-4 h-4 animate-spin rounded-full border-2 border-black border-t-transparent"></div>
-                                <span>{isSubmitting ? 'Submitting...' : 'Processing...'}</span>
-                            </>
-                        ) : (
-                            <>
-                                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                                    <path d="M12 2l2.1 4.7L19 8.9l-4.2 2L13 16l-1-5.1L7 8.9l4.9-2.2L12 2z" />
-                                </svg>
-                                <span>Submit</span>
-                            </>
-                        )}
-                    </button>
+                    {/* Submit Button */}
+                    <div className="flex flex-col items-center gap-4 mt-8">
+                        <button
+                            type="submit"
+                            disabled={!canSubmit() || isLoading || isSubmitting}
+                            className={`flex items-center justify-center gap-3 rounded-xl px-12 py-4 text-base font-semibold transition-all duration-200 min-w-[250px] ${canSubmit() && !isSubmitting
+                                ? 'bg-gradient-to-r from-green-400 to-green-500 text-black hover:from-green-300 hover:to-green-400 shadow-lg hover:shadow-green-500/25 transform hover:scale-105'
+                                : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                                }`}
+                        >
+                            {isLoading || isSubmitting ? (
+                                <>
+                                    <div className="w-5 h-5 animate-spin rounded-full border-2 border-black border-t-transparent"></div>
+                                    <span>{isSubmitting ? 'Submitting...' : 'Processing...'}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                        <path d="M12 2l2.1 4.7L19 8.9l-4.2 2L13 16l-1-5.1L7 8.9l4.9-2.2L12 2z" />
+                                    </svg>
+                                    <span>Submit Order Details</span>
+                                </>
+                            )}
+                        </button>
 
-                    <button
-                        type="button"
-                        onClick={() => window.open('/terms', '_blank')}
-                        className="text-white/70 hover:text-white text-xs underline"
-                    >
-                        View Terms & Conditions
-                    </button>
+                        <button
+                            type="button"
+                            onClick={() => window.open('/terms', '_blank')}
+                            className="text-white/70 hover:text-white text-sm underline transition-colors"
+                        >
+                            View Terms & Conditions
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
     )
 
     const renderMainForm = () => (
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-8 sm:mb-12">
-                <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1"></div>
-                    <div className="flex-1 text-center">
-                        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl mb-3" style={{ color: '#34D399' }}>
+                {/* Header with reset button */}
+                <div className="relative mb-8">
+                    <button
+                        type="button"
+                        onClick={resetForm}
+                        className="absolute top-0 right-0 text-red-400 hover:text-red-300 text-sm underline px-3 py-2 rounded-lg hover:bg-red-900/20 transition-colors z-10"
+                        disabled={isLoading || isSubmitting}
+                    >
+                        Reset Form
+                    </button>
+
+                    {/* Centered titles */}
+                    <div className="text-center">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-3" style={{ color: '#34D399' }}>
                             Toing By Swiggy
                         </h1>
-                        <h2 className="text-xl font-bold sm:text-2xl md:text-3xl lg:text-4xl mb-6" style={{ color: '#34D399' }}>
+                        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-6" style={{ color: '#34D399' }}>
                             Submit your order details
                         </h2>
                     </div>
-                    <div className="flex-1 flex justify-end">
-                        <button
-                            type="button"
-                            onClick={resetForm}
-                            className="text-red-400 hover:text-red-300 text-sm underline px-3 py-2 rounded-lg hover:bg-red-900/20 transition-colors"
-                            disabled={isLoading || isSubmitting}
-                        >
-                            Reset Form
-                        </button>
-                    </div>
                 </div>
-                <p className="text-sm sm:text-base md:text-lg text-white/90 max-w-2xl mx-auto leading-relaxed">
+
+                <p className="text-sm sm:text-base md:text-lg text-white/90 max-w-2xl mx-auto text-center leading-relaxed">
                     Fill in your details and upload a screenshot of your Swiggy order to get started.
                 </p>
             </div>
@@ -686,64 +726,82 @@ const EventsPage = () => {
             {renderForm()}
 
             {error && (
-                <div className={`text-sm mb-6 max-w-2xl mx-auto p-4 rounded-lg ${networkError
-                    ? 'bg-red-900/20 border border-red-400/30 text-red-300'
-                    : 'bg-red-900/20 border border-red-400/30 text-red-400'
+                <div className={`max-w-4xl mx-auto mb-8 ${networkError
+                    ? 'bg-red-500/10 border border-red-400/30 text-red-300'
+                    : 'bg-red-500/10 border border-red-400/30 text-red-400'
                     }`}>
-                    <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                        <span>{error}</span>
+                    <div className="bg-red-500/10 backdrop-blur-sm rounded-2xl p-6 border border-red-400/30">
+                        <div className="flex items-start gap-3">
+                            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            <div>
+                                <p className="font-medium">{error}</p>
+                                {networkError && (
+                                    <p className="text-sm mt-2 opacity-80">
+                                        Please check your internet connection and try again. If the problem persists, contact support.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                    {networkError && (
-                        <p className="text-xs mt-2 text-red-300/80">
-                            Please check your internet connection and try again. If the problem persists, contact support.
-                        </p>
-                    )}
                 </div>
             )}
 
             {/* Success Modal */}
             {submissionSuccess && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                    <div className="relative w-full max-w-md mx-auto">
+                    <div className="relative w-full max-w-lg mx-auto">
                         <div className="bg-gray-900/95 backdrop-blur-md rounded-2xl border border-green-400/30 p-8 shadow-2xl">
                             <div className="flex flex-col items-center gap-6 text-center">
-                                <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center">
-                                    <svg className="w-10 h-10 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center">
+                                    <svg className="w-12 h-12 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                     </svg>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <h3 className="text-2xl font-bold text-green-400">Congratulations!</h3>
+                                <div className="space-y-3">
+                                    <h3 className="text-3xl font-bold text-green-400">Congratulations!</h3>
                                     <p className="text-lg text-green-300">Your submission has been recorded successfully</p>
                                 </div>
 
-                                <div className="text-sm text-white/80 space-y-2">
-                                    <p>🎉 Thank you for participating in our Swiggy Cashback Campaign!</p>
-                                    <p>📋 Your order details have been submitted for verification</p>
-                                    <p>⏰ Cashback will be processed within 15-20 working days</p>
-                                    <p>📱 You'll receive updates via SMS on your registered mobile number</p>
+                                <div className="bg-white/5 rounded-xl p-4 w-full">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-white/80">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-green-400">🎉</span>
+                                            <span>Thank you for participating!</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-green-400">📋</span>
+                                            <span>Details submitted for verification</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-green-400">⏰</span>
+                                            <span>Cashback in 15-20 working days</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-green-400">📱</span>
+                                            <span>SMS updates on your mobile</span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-col gap-3 w-full">
                                     <button
                                         onClick={() => window.open('/terms', '_blank')}
-                                        className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-400/30 rounded-lg text-green-300 text-sm transition-colors"
+                                        className="px-6 py-3 bg-green-500/20 hover:bg-green-500/30 border border-green-400/30 rounded-xl text-green-300 text-sm transition-colors font-medium"
                                     >
                                         View Terms & Conditions
                                     </button>
                                     <button
                                         onClick={() => window.open('https://chat.whatsapp.com/LOcskbkvq5PCaZNHoJAoex', '_blank')}
-                                        className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 rounded-lg text-blue-300 text-sm transition-colors"
+                                        className="px-6 py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 rounded-xl text-blue-300 text-sm transition-colors font-medium"
                                     >
                                         Contact Support
                                     </button>
                                     <button
                                         onClick={() => setSubmissionSuccess(false)}
-                                        className="px-4 py-2 bg-gray-500/20 hover:bg-gray-500/30 border border-gray-400/30 rounded-lg text-gray-300 text-sm transition-colors"
+                                        className="px-6 py-3 bg-gray-500/20 hover:bg-gray-500/30 border border-gray-400/30 rounded-xl text-gray-300 text-sm transition-colors font-medium"
                                     >
                                         Close
                                     </button>

@@ -20,7 +20,7 @@ const Terms = () => {
                         onClick={() => navigate('/')}
                     />
                     <button
-                        onClick={() => navigate('/events')}
+                        onClick={() => navigate('/toing')}
                         className="rounded-full px-5 h-10 text-sm font-semibold text-black"
                         style={{ backgroundColor: '#34D399' }}
                     >

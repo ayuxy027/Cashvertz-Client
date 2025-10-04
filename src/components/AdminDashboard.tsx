@@ -17,6 +17,9 @@ interface AdminSubmission {
 }
 
 const AdminDashboard = () => {
+    const [isAuthenticated, setIsAuthenticated] = useState(false)
+    const [password, setPassword] = useState('')
+    const [authError, setAuthError] = useState('')
     const [submissions, setSubmissions] = useState<AdminSubmission[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
@@ -28,15 +31,48 @@ const AdminDashboard = () => {
     })
 
     useEffect(() => {
-        loadSubmissions()
-
-        // Auto-refresh every 10 seconds to show real-time updates
-        const interval = setInterval(() => {
+        // Check if already authenticated
+        const savedAuth = localStorage.getItem('admin_authenticated')
+        if (savedAuth === 'true') {
+            setIsAuthenticated(true)
             loadSubmissions()
-        }, 10000)
 
-        return () => clearInterval(interval)
+            // Auto-refresh every 10 seconds to show real-time updates
+            const interval = setInterval(() => {
+                loadSubmissions()
+            }, 10000)
+
+            return () => clearInterval(interval)
+        } else {
+            setLoading(false)
+        }
     }, [])
+
+    const handleLogin = (e: React.FormEvent) => {
+        e.preventDefault()
+        setAuthError('')
+
+        if (password === '2345') {
+            setIsAuthenticated(true)
+            localStorage.setItem('admin_authenticated', 'true')
+            loadSubmissions()
+
+            // Auto-refresh every 10 seconds to show real-time updates
+            const interval = setInterval(() => {
+                loadSubmissions()
+            }, 10000)
+
+            return () => clearInterval(interval)
+        } else {
+            setAuthError('Invalid password')
+        }
+    }
+
+    const handleLogout = () => {
+        setIsAuthenticated(false)
+        localStorage.removeItem('admin_authenticated')
+        setPassword('')
+    }
 
     const loadSubmissions = async () => {
         try {
@@ -154,6 +190,58 @@ const AdminDashboard = () => {
         }
     }
 
+    // Login form
+    if (!isAuthenticated) {
+        return (
+            <div className="relative min-h-screen w-full overflow-hidden text-white bg-black">
+                <div className="absolute inset-0 -z-10">
+                    <img src={bgSvg} alt="" className="h-full w-full object-cover" loading="eager" decoding="async" />
+                </div>
+
+                <div className="flex items-center justify-center min-h-screen p-4">
+                    <div className="w-full max-w-md">
+                        <div className="text-center mb-8">
+                            <img
+                                src={logo}
+                                alt="CashVertz"
+                                className="h-16 w-auto mx-auto mb-4"
+                                loading="eager"
+                            />
+                            <h1 className="text-2xl font-bold text-white mb-2">Admin Dashboard</h1>
+                            <p className="text-white/60">Enter password to access</p>
+                        </div>
+
+                        <form onSubmit={handleLogin} className="space-y-6">
+                            <div>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="Enter admin password"
+                                    className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder:text-white/50 focus:outline-none focus:border-green-400 transition-colors"
+                                    required
+                                />
+                            </div>
+
+                            {authError && (
+                                <div className="text-red-400 text-sm text-center">
+                                    {authError}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+                            >
+                                Login
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     if (loading) {
         return (
             <div className="relative min-h-screen w-full overflow-hidden text-white bg-black">
@@ -208,9 +296,17 @@ const AdminDashboard = () => {
             <main className="px-4 py-8 sm:px-6 sm:py-16">
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-8">
-                        <h2 className="text-3xl font-bold mb-2" style={{ color: '#34D399' }}>
-                            Swiggy Orders
-                        </h2>
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-3xl font-bold" style={{ color: '#34D399' }}>
+                                Swiggy Orders
+                            </h2>
+                            <button
+                                onClick={handleLogout}
+                                className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 rounded-lg text-red-300 text-sm transition-colors"
+                            >
+                                Logout
+                            </button>
+                        </div>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <p className="text-white/80">Manage and review user submissions</p>
                             <button
