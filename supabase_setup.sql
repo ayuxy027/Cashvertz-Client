@@ -3,7 +3,7 @@ CREATE SCHEMA public;
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON SCHEMA public TO anon, authenticated;
 
-DELETE FROM storage.buckets WHERE id = 'swiggy-screenshots';
+DELETE FROM storage.objects WHERE bucket_id = 'swiggy-screenshots';
 
 CREATE TABLE swiggy_orders (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -137,3 +137,5 @@ GRANT ALL ON swiggy_orders_admin_view TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION get_swiggy_campaign_stats() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION update_order_status(UUID, VARCHAR) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION update_updated_at_column() TO anon, authenticated;
+
+SELECT 'Database refreshed successfully - all data cleared and schema recreated' as status;
