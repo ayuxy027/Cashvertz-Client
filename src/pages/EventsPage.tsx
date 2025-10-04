@@ -123,8 +123,7 @@ const EventsPage = () => {
     const validateScreenshot = useCallback((file: File | null): boolean => {
         if (!file) return false
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
-        const maxSize = 5 * 1024 * 1024 // 5MB
-        return validTypes.includes(file.type) && file.size <= maxSize
+        return validTypes.includes(file.type)
     }, [])
 
     // Comprehensive validation function
@@ -190,8 +189,9 @@ const EventsPage = () => {
     const canRedirectToApp = useCallback(() => {
         return userName.trim() && validateName(userName) &&
             phone.trim() && validatePhone(phone) &&
-            upiId.trim() && validateUPI(upiId)
-    }, [userName, phone, upiId, validateName, validatePhone, validateUPI])
+            upiId.trim() && validateUPI(upiId) &&
+            !validationErrors.upiId
+    }, [userName, phone, upiId, validateName, validatePhone, validateUPI, validationErrors.upiId])
 
     const canSubmit = useCallback(() => {
         return canRedirectToApp() && hasClickedRedirect && screenshot && validateScreenshot(screenshot) && agreed
@@ -237,14 +237,12 @@ const EventsPage = () => {
                 .limit(1)
 
             if (error) {
-                console.error('UPI validation error:', error)
                 // If table doesn't exist or other error, allow the UPI for now
                 return true
             }
 
             return !data || data.length === 0
         } catch (error) {
-            console.error('UPI validation network error:', error)
             // On any error, allow the UPI to avoid blocking users
             return true
         } finally {
@@ -269,6 +267,11 @@ const EventsPage = () => {
                         setValidationErrors(prev => ({
                             ...prev,
                             upiId: 'This UPI ID has already been used for an order'
+                        }))
+                    } else {
+                        setValidationErrors(prev => ({
+                            ...prev,
+                            upiId: undefined
                         }))
                     }
                 }, 1000)
@@ -334,54 +337,44 @@ const EventsPage = () => {
                 return
             }
 
-            // Upload screenshot to Supabase storage with retry logic
+            // Upload screenshot to Supabase storage with enhanced error handling
             let screenshotUrl = ''
             if (screenshot) {
                 const fileExt = screenshot.name.split('.').pop()
                 const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
 
-                let uploadAttempts = 0
-                const maxUploadAttempts = 3
+                try {
+                    // Upload with upsert to handle filename conflicts
+                    const { error: uploadError } = await supabase.storage
+                        .from('swiggy-screenshots')
+                        .upload(fileName, screenshot, {
+                            cacheControl: '3600',
+                            upsert: true
+                        })
 
-                while (uploadAttempts < maxUploadAttempts) {
-                    try {
-                        const { error: uploadError } = await supabase.storage
-                            .from('swiggy-screenshots')
-                            .upload(fileName, screenshot)
-
-                        if (uploadError) {
-                            uploadAttempts++
-                            if (uploadAttempts >= maxUploadAttempts) {
-                                setError('Failed to upload screenshot. Please try again with a smaller file.')
-                                setIsLoading(false)
-                                setIsSubmitting(false)
-                                return
-                            }
-                            await new Promise(resolve => setTimeout(resolve, 1000)) // Wait 1 second before retry
-                            continue
-                        }
-
-                        const { data: { publicUrl } } = supabase.storage
-                            .from('swiggy-screenshots')
-                            .getPublicUrl(fileName)
-
-                        screenshotUrl = publicUrl
-                        break
-                    } catch (uploadErr) {
-                        uploadAttempts++
-                        if (uploadAttempts >= maxUploadAttempts) {
-                            setError('Network error during screenshot upload. Please check your connection and try again.')
-                            setNetworkError(true)
-                            setIsLoading(false)
-                            setIsSubmitting(false)
-                            return
-                        }
-                        await new Promise(resolve => setTimeout(resolve, 1000))
+                    if (uploadError) {
+                        setError(`Upload failed: ${uploadError.message}`)
+                        setIsLoading(false)
+                        setIsSubmitting(false)
+                        return
                     }
+
+                    // Get public URL
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('swiggy-screenshots')
+                        .getPublicUrl(fileName)
+
+                    screenshotUrl = publicUrl
+                } catch (uploadErr) {
+                    setError('Network error during upload. Please check your connection and try again.')
+                    setNetworkError(true)
+                    setIsLoading(false)
+                    setIsSubmitting(false)
+                    return
                 }
             }
 
-            // Check if mobile number already exists (to prevent multiple orders from same number)
+            // Check if mobile number already exists
             const existingOrderCheck = await supabase
                 .from('swiggy_orders')
                 .select('id')
@@ -389,20 +382,21 @@ const EventsPage = () => {
                 .limit(1)
 
             if (existingOrderCheck.error) {
-                console.error('Existing order check error:', existingOrderCheck.error)
                 setError('Network error during validation. Please try again.')
                 setNetworkError(true)
                 setIsLoading(false)
                 setIsSubmitting(false)
                 return
-            } else if (existingOrderCheck.data && existingOrderCheck.data.length > 0) {
+            }
+
+            if (existingOrderCheck.data && existingOrderCheck.data.length > 0) {
                 setError('This mobile number has already been used for an order. Please use a different mobile number.')
                 setIsLoading(false)
                 setIsSubmitting(false)
                 return
             }
 
-            // Insert order with transaction-like approach
+            // Insert new order record
             const { error: insertErr } = await supabase.from('swiggy_orders').insert([
                 {
                     user_name: userName.trim(),
@@ -440,7 +434,6 @@ const EventsPage = () => {
             setSubmissionSuccess(true)
 
         } catch (error) {
-            console.error('Submission error:', error)
             setNetworkError(true)
             setError('An unexpected error occurred. Please check your connection and try again. If the problem persists, contact support.')
         } finally {
@@ -536,7 +529,7 @@ const EventsPage = () => {
                         style={{ backgroundColor: canRedirectToApp() ? '#34D399' : '#666' }}
                         onClick={() => {
                             setHasClickedRedirect(true)
-                            // This could open Swiggy app or show instructions
+                            // Open Swiggy in new tab
                             window.open('https://swiggy.com', '_blank')
                         }}
                     >
@@ -553,7 +546,7 @@ const EventsPage = () => {
                     <div className="text-left text-white/80 text-xs sm:text-sm mb-4">
                         <p className="mb-1">- Upload a clear screenshot of your Swiggy order</p>
                         <p className="mb-1">- Make sure order details are clearly visible</p>
-                        <p className="mb-1">- File size should be less than 5MB</p>
+                        <p className="mb-1">- File size limit removed for better quality</p>
                         <p className="mb-1">- Supported formats: JPG, PNG, GIF, WebP</p>
                         {!hasClickedRedirect && (
                             <p className="mb-1 text-yellow-400 font-medium">⚠️ Please click "Redirect to App" first to unlock screenshot upload</p>
@@ -711,45 +704,55 @@ const EventsPage = () => {
                 </div>
             )}
 
+            {/* Success Modal */}
             {submissionSuccess && (
-                <div className="text-center max-w-2xl mx-auto p-8 rounded-lg bg-green-900/20 border border-green-400/30">
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
-                            <svg className="w-8 h-8 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                        </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="relative w-full max-w-md mx-auto">
+                        <div className="bg-gray-900/95 backdrop-blur-md rounded-2xl border border-green-400/30 p-8 shadow-2xl">
+                            <div className="flex flex-col items-center gap-6 text-center">
+                                <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center">
+                                    <svg className="w-10 h-10 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
 
-                        <div className="space-y-2">
-                            <h3 className="text-2xl font-bold text-green-400">Congratulations!</h3>
-                            <p className="text-lg text-green-300">Your submission has been recorded successfully</p>
-                        </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-bold text-green-400">Congratulations!</h3>
+                                    <p className="text-lg text-green-300">Your submission has been recorded successfully</p>
+                                </div>
 
-                        <div className="text-sm text-white/80 space-y-1">
-                            <p>🎉 Thank you for participating in our Swiggy Cashback Campaign!</p>
-                            <p>📋 Your order details have been submitted for verification</p>
-                            <p>⏰ Cashback will be processed within 15-20 working days</p>
-                            <p>📱 You'll receive updates via SMS on your registered mobile number</p>
-                        </div>
+                                <div className="text-sm text-white/80 space-y-2">
+                                    <p>🎉 Thank you for participating in our Swiggy Cashback Campaign!</p>
+                                    <p>📋 Your order details have been submitted for verification</p>
+                                    <p>⏰ Cashback will be processed within 15-20 working days</p>
+                                    <p>📱 You'll receive updates via SMS on your registered mobile number</p>
+                                </div>
 
-                        <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                            <button
-                                onClick={() => window.open('/terms', '_blank')}
-                                className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-400/30 rounded-lg text-green-300 text-sm transition-colors"
-                            >
-                                View Terms & Conditions
-                            </button>
-                            <button
-                                onClick={() => window.open('https://chat.whatsapp.com/LOcskbkvq5PCaZNHoJAoex', '_blank')}
-                                className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 rounded-lg text-blue-300 text-sm transition-colors"
-                            >
-                                Contact Support
-                            </button>
-                        </div>
+                                <div className="flex flex-col gap-3 w-full">
+                                    <button
+                                        onClick={() => window.open('/terms', '_blank')}
+                                        className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 border border-green-400/30 rounded-lg text-green-300 text-sm transition-colors"
+                                    >
+                                        View Terms & Conditions
+                                    </button>
+                                    <button
+                                        onClick={() => window.open('https://chat.whatsapp.com/LOcskbkvq5PCaZNHoJAoex', '_blank')}
+                                        className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 rounded-lg text-blue-300 text-sm transition-colors"
+                                    >
+                                        Contact Support
+                                    </button>
+                                    <button
+                                        onClick={() => setSubmissionSuccess(false)}
+                                        className="px-4 py-2 bg-gray-500/20 hover:bg-gray-500/30 border border-gray-400/30 rounded-lg text-gray-300 text-sm transition-colors"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
 
-                        <div className="text-xs text-white/60 mt-4">
-                            <p>Keep your mobile number handy for cashback updates</p>
-                            <p>For any queries, contact us via WhatsApp</p>
+                                <div className="text-xs text-white/60">
+                                    <p>Keep your mobile number handy for cashback updates</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

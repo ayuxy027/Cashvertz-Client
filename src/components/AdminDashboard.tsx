@@ -29,13 +29,20 @@ const AdminDashboard = () => {
 
     useEffect(() => {
         loadSubmissions()
+
+        // Auto-refresh every 10 seconds to show real-time updates
+        const interval = setInterval(() => {
+            loadSubmissions()
+        }, 10000)
+
+        return () => clearInterval(interval)
     }, [])
 
     const loadSubmissions = async () => {
         try {
             setLoading(true)
             const { data, error } = await supabase
-                .from('swiggy_orders_admin_view')
+                .from('swiggy_orders')
                 .select('*')
                 .order('created_at', { ascending: false })
 
@@ -43,13 +50,33 @@ const AdminDashboard = () => {
                 throw error
             }
 
-            setSubmissions(data || [])
+            // Process data to match admin view format
+            const processedData = (data || []).map(submission => {
+                let progressStage = 'details_entered'
+
+                if (submission.screenshot_url && submission.status === 'submitted') {
+                    progressStage = 'pending_approval'
+                } else if (submission.screenshot_url && submission.status === 'approved') {
+                    progressStage = 'approved'
+                } else if (submission.screenshot_url && submission.status === 'rejected') {
+                    progressStage = 'rejected'
+                } else if (submission.has_redirected && !submission.screenshot_url) {
+                    progressStage = 'redirected'
+                }
+
+                return {
+                    ...submission,
+                    progress_stage: progressStage
+                }
+            })
+
+            setSubmissions(processedData)
 
             // Calculate statistics
-            const total = data?.length || 0
-            const pending = data?.filter(s => s.progress_stage === 'pending_approval').length || 0
-            const approved = data?.filter(s => s.progress_stage === 'approved').length || 0
-            const rejected = data?.filter(s => s.progress_stage === 'rejected').length || 0
+            const total = processedData.length
+            const pending = processedData.filter(s => s.progress_stage === 'pending_approval').length
+            const approved = processedData.filter(s => s.progress_stage === 'approved').length
+            const rejected = processedData.filter(s => s.progress_stage === 'rejected').length
 
             setStats({ total, pending, approved, rejected })
         } catch {
@@ -63,13 +90,14 @@ const AdminDashboard = () => {
         try {
             const { error } = await supabase
                 .from('swiggy_orders')
-                .update({ status: 'approved' })
+                .update({ status: 'approved', updated_at: new Date().toISOString() })
                 .eq('id', id)
 
             if (error) {
                 throw error
             }
-            loadSubmissions()
+            // Refresh immediately after action
+            await loadSubmissions()
         } catch {
             setError('Failed to approve submission')
         }
@@ -79,13 +107,14 @@ const AdminDashboard = () => {
         try {
             const { error } = await supabase
                 .from('swiggy_orders')
-                .update({ status: 'rejected' })
+                .update({ status: 'rejected', updated_at: new Date().toISOString() })
                 .eq('id', id)
 
             if (error) {
                 throw error
             }
-            loadSubmissions()
+            // Refresh immediately after action
+            await loadSubmissions()
         } catch {
             setError('Failed to reject submission')
         }
@@ -95,13 +124,14 @@ const AdminDashboard = () => {
         try {
             const { error } = await supabase
                 .from('swiggy_orders')
-                .update({ status: 'approved' })
+                .update({ status: 'approved', updated_at: new Date().toISOString() })
                 .eq('status', 'submitted')
 
             if (error) {
                 throw error
             }
-            loadSubmissions()
+            // Refresh immediately after action
+            await loadSubmissions()
         } catch {
             setError('Failed to approve all submissions')
         }
@@ -111,13 +141,14 @@ const AdminDashboard = () => {
         try {
             const { error } = await supabase
                 .from('swiggy_orders')
-                .update({ status: 'rejected' })
+                .update({ status: 'rejected', updated_at: new Date().toISOString() })
                 .eq('status', 'submitted')
 
             if (error) {
                 throw error
             }
-            loadSubmissions()
+            // Refresh immediately after action
+            await loadSubmissions()
         } catch {
             setError('Failed to reject all submissions')
         }
@@ -182,6 +213,12 @@ const AdminDashboard = () => {
                         </h2>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <p className="text-white/80">Manage and review user submissions</p>
+                            <button
+                                onClick={loadSubmissions}
+                                className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-400/30 rounded-lg text-blue-300 text-sm transition-colors"
+                            >
+                                🔄 Refresh
+                            </button>
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={approveAll}
