@@ -63,23 +63,33 @@ const EventsPage = () => {
 
     // Auto-save to localStorage on field changes
     useEffect(() => {
-        if (userName) localStorage.setItem('swiggy_userName', userName)
+        if (userName) {
+            localStorage.setItem('swiggy_userName', userName)
+        }
     }, [userName])
 
     useEffect(() => {
-        if (phone) localStorage.setItem('swiggy_phone', phone)
+        if (phone) {
+            localStorage.setItem('swiggy_phone', phone)
+        }
     }, [phone])
 
     useEffect(() => {
-        if (upiId) localStorage.setItem('swiggy_upiId', upiId)
+        if (upiId) {
+            localStorage.setItem('swiggy_upiId', upiId)
+        }
     }, [upiId])
 
     useEffect(() => {
-        if (agreed) localStorage.setItem('swiggy_agreed', 'true')
+        if (agreed) {
+            localStorage.setItem('swiggy_agreed', 'true')
+        }
     }, [agreed])
 
     useEffect(() => {
-        if (hasClickedRedirect) localStorage.setItem('swiggy_hasClickedRedirect', 'true')
+        if (hasClickedRedirect) {
+            localStorage.setItem('swiggy_hasClickedRedirect', 'true')
+        }
     }, [hasClickedRedirect])
 
     // Reset form function
@@ -121,7 +131,9 @@ const EventsPage = () => {
     }, [])
 
     const validateScreenshot = useCallback((file: File | null): boolean => {
-        if (!file) return false
+        if (!file) {
+            return false
+        }
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
         return validTypes.includes(file.type)
     }, [])
@@ -225,7 +237,9 @@ const EventsPage = () => {
 
     // UPI validation with database check
     const validateUPIUnique = useCallback(async (upi: string): Promise<boolean> => {
-        if (!validateUPI(upi)) return false
+        if (!validateUPI(upi)) {
+            return false
+        }
 
         try {
             setIsValidatingUPI(true)
@@ -242,7 +256,7 @@ const EventsPage = () => {
             }
 
             return !data || data.length === 0
-        } catch (error) {
+        } catch {
             // On any error, allow the UPI to avoid blocking users
             return true
         } finally {
@@ -365,7 +379,7 @@ const EventsPage = () => {
                         .getPublicUrl(fileName)
 
                     screenshotUrl = publicUrl
-                } catch (uploadErr) {
+                } catch {
                     setError('Network error during upload. Please check your connection and try again.')
                     setNetworkError(true)
                     setIsLoading(false)
@@ -433,7 +447,7 @@ const EventsPage = () => {
             resetForm()
             setSubmissionSuccess(true)
 
-        } catch (error) {
+        } catch {
             setNetworkError(true)
             setError('An unexpected error occurred. Please check your connection and try again. If the problem persists, contact support.')
         } finally {
