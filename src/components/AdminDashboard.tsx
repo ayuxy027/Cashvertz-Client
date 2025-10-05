@@ -8,6 +8,7 @@ interface AdminSubmission {
     user_name: string
     mobile_number: string
     upi_id: string
+    order_amount: number | null
     screenshot_url: string | null
     status: string
     has_redirected: boolean
@@ -367,6 +368,9 @@ const AdminDashboard = () => {
                                             User Details
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
+                                            Order Amount
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
                                             Progress
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-white/80 uppercase tracking-wider">
@@ -393,6 +397,11 @@ const AdminDashboard = () => {
                                                 </div>
                                                 <div className="text-xs text-white/50">
                                                     Submitted: {new Date(submission.created_at).toLocaleString()}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-green-300">
+                                                    {submission.order_amount ? `₹${submission.order_amount.toFixed(2)}` : 'N/A'}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
