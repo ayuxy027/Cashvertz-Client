@@ -11,7 +11,6 @@ const EventsPage = () => {
     const [userName, setUserName] = useState('')
     const [phone, setPhone] = useState('')
     const [upiId, setUpiId] = useState('')
-    const [orderAmount, setOrderAmount] = useState('')
     const [screenshot, setScreenshot] = useState<File | null>(null)
     const [screenshotPreview, setScreenshotPreview] = useState<string>('')
 
@@ -26,7 +25,6 @@ const EventsPage = () => {
         userName?: string
         phone?: string
         upiId?: string
-        orderAmount?: string
         screenshot?: string
     }>({})
 
@@ -42,7 +40,6 @@ const EventsPage = () => {
             ['swiggy_userName', setUserName],
             ['swiggy_phone', setPhone],
             ['swiggy_upiId', setUpiId],
-            ['swiggy_orderAmount', setOrderAmount],
         ]
         for (const [key, setter] of map) {
             const v = localStorage.getItem(key)
@@ -83,11 +80,6 @@ const EventsPage = () => {
         }
     }, [upiId])
 
-    useEffect(() => {
-        if (orderAmount) {
-            localStorage.setItem('swiggy_orderAmount', orderAmount)
-        }
-    }, [orderAmount])
 
     useEffect(() => {
         if (agreed) {
@@ -106,7 +98,6 @@ const EventsPage = () => {
         setUserName('')
         setPhone('')
         setUpiId('')
-        setOrderAmount('')
         setScreenshot(null)
         setScreenshotPreview('')
         setAgreed(false)
@@ -122,7 +113,6 @@ const EventsPage = () => {
         localStorage.removeItem('swiggy_userName')
         localStorage.removeItem('swiggy_phone')
         localStorage.removeItem('swiggy_upiId')
-        localStorage.removeItem('swiggy_orderAmount')
         localStorage.removeItem('swiggy_agreed')
         localStorage.removeItem('swiggy_hasClickedRedirect')
     }, [])
@@ -149,10 +139,6 @@ const EventsPage = () => {
         return validTypes.includes(file.type)
     }, [])
 
-    const validateOrderAmount = useCallback((amount: string): boolean => {
-        const numAmount = parseFloat(amount)
-        return !isNaN(numAmount) && numAmount >= 99
-    }, [])
 
     // Comprehensive validation function
     const validateAllFields = useCallback(() => {
@@ -179,12 +165,6 @@ const EventsPage = () => {
             errors.upiId = 'Enter a valid UPI ID (e.g., name@bank)'
         }
 
-        // Order amount validation
-        if (!orderAmount.trim()) {
-            errors.orderAmount = 'Order amount is required'
-        } else if (!validateOrderAmount(orderAmount)) {
-            errors.orderAmount = 'Order amount must be at least ₹99'
-        }
 
         // Screenshot validation
         if (!screenshot) {
@@ -195,7 +175,7 @@ const EventsPage = () => {
 
         setValidationErrors(errors)
         return Object.keys(errors).length === 0
-    }, [userName, phone, upiId, orderAmount, screenshot, validateName, validatePhone, validateUPI, validateOrderAmount, validateScreenshot])
+    }, [userName, phone, upiId, screenshot, validateName, validatePhone, validateUPI, validateScreenshot])
 
 
     const handleScreenshotUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,9 +205,8 @@ const EventsPage = () => {
         return userName.trim() && validateName(userName) &&
             phone.trim() && validatePhone(phone) &&
             upiId.trim() && validateUPI(upiId) &&
-            orderAmount.trim() && validateOrderAmount(orderAmount) &&
-            !validationErrors.upiId && !validationErrors.orderAmount
-    }, [userName, phone, upiId, orderAmount, validateName, validatePhone, validateUPI, validateOrderAmount, validationErrors.upiId, validationErrors.orderAmount])
+            !validationErrors.upiId
+    }, [userName, phone, upiId, validateName, validatePhone, validateUPI, validationErrors.upiId])
 
     const canSubmit = useCallback(() => {
         return canRedirectToApp() && hasClickedRedirect && screenshot && validateScreenshot(screenshot) && agreed
@@ -321,19 +300,6 @@ const EventsPage = () => {
         }
     }, [validateUPI, validateUPIUnique])
 
-    const handleOrderAmountChange = useCallback((value: string) => {
-        // Allow only numbers and decimal point
-        const cleaned = value.replace(/[^0-9.]/g, '')
-        setOrderAmount(cleaned)
-        if (cleaned) {
-            setValidationErrors(prev => ({
-                ...prev,
-                orderAmount: validateOrderAmount(cleaned) ? undefined : 'Order amount must be at least ₹99'
-            }))
-        } else {
-            setValidationErrors(prev => ({ ...prev, orderAmount: undefined }))
-        }
-    }, [validateOrderAmount])
 
     const handleSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault()
@@ -361,7 +327,7 @@ const EventsPage = () => {
             }
 
             // Final validation checks
-            if (!userName.trim() || !phone.trim() || !upiId.trim() || !orderAmount.trim()) {
+            if (!userName.trim() || !phone.trim() || !upiId.trim()) {
                 setError('Please fill in all required fields')
                 setIsLoading(false)
                 setIsSubmitting(false)
@@ -454,7 +420,6 @@ const EventsPage = () => {
                     user_name: userName.trim(),
                     mobile_number: phone.trim(),
                     upi_id: upiId.trim(),
-                    order_amount: parseFloat(orderAmount.trim()),
                     screenshot_url: screenshotUrl,
                     has_redirected: hasClickedRedirect,
                     status: 'submitted',
@@ -493,7 +458,7 @@ const EventsPage = () => {
             setIsLoading(false)
             setIsSubmitting(false)
         }
-    }, [validateAllFields, validateUPIUnique, screenshot, userName, phone, upiId, orderAmount, hasClickedRedirect, agreed, resetForm])
+    }, [validateAllFields, validateUPIUnique, screenshot, userName, phone, upiId, hasClickedRedirect, agreed, resetForm])
 
     // Keep compatibility with any earlier prefill
     useEffect(() => {
@@ -581,23 +546,6 @@ const EventsPage = () => {
                             )}
                         </div>
 
-                        <div className="space-y-2">
-                            <input
-                                type="text"
-                                required
-                                value={orderAmount}
-                                onChange={(e) => handleOrderAmountChange(e.target.value)}
-                                placeholder="Order Amount (Minimum ₹99)"
-                                inputMode="numeric"
-                                className={`w-full bg-white/10 border rounded-xl px-4 py-4 text-white placeholder:text-white/60 focus:outline-none text-base transition-all duration-200 ${validationErrors.orderAmount
-                                    ? 'border-red-400 focus:border-red-300 bg-red-500/10'
-                                    : 'border-white/30 focus:border-green-400 focus:bg-white/15'
-                                    }`}
-                            />
-                            {validationErrors.orderAmount && (
-                                <p className="text-red-400 text-sm px-2">{validationErrors.orderAmount}</p>
-                            )}
-                        </div>
                     </div>
                 </div>
 
@@ -782,7 +730,7 @@ const EventsPage = () => {
                     {/* Centered title */}
                     <div className="text-center">
                         <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-6xl xl:text-7xl font-bold tracking-tight mb-8" style={{ color: '#34D399' }}>
-                            Toing X Cashvertz
+                            Toing X CashVertz
                         </h1>
                     </div>
                 </div>

@@ -10,7 +10,6 @@ CREATE TABLE swiggy_orders (
     user_name VARCHAR(100) NOT NULL,
     mobile_number VARCHAR(10) NOT NULL,
     upi_id VARCHAR(100) NOT NULL,
-    order_amount DECIMAL(10,2),
     screenshot_url TEXT,
     status VARCHAR(20) DEFAULT 'submitted' CHECK (status IN ('submitted', 'approved', 'rejected')),
     has_redirected BOOLEAN DEFAULT FALSE,
@@ -82,7 +81,6 @@ SELECT
     user_name,
     mobile_number,
     upi_id,
-    order_amount,
     screenshot_url,
     status,
     has_redirected,
@@ -139,5 +137,3 @@ GRANT ALL ON swiggy_orders_admin_view TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION get_swiggy_campaign_stats() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION update_order_status(UUID, VARCHAR) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION update_updated_at_column() TO anon, authenticated;
-
-SELECT 'Database refreshed successfully - all data cleared and schema recreated' as status;
