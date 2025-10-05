@@ -563,7 +563,7 @@ const EventsPage = () => {
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-white/80 text-sm">
                                 <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                                <span>Upload a clear screenshot of your Swiggy order</span>
+                                <span>Upload delivered screenshot of your Toing order</span>
                             </div>
                             <div className="flex items-center gap-2 text-white/80 text-sm">
                                 <div className="w-2 h-2 bg-green-400 rounded-full"></div>
@@ -712,28 +712,25 @@ const EventsPage = () => {
             <div className="mb-8 sm:mb-12">
                 {/* Header with reset button */}
                 <div className="relative mb-8">
-                    <button
-                        type="button"
-                        onClick={resetForm}
-                        className="absolute top-0 right-0 text-red-400 hover:text-red-300 text-sm underline px-3 py-2 rounded-lg hover:bg-red-900/20 transition-colors z-10"
-                        disabled={isLoading || isSubmitting}
-                    >
-                        Reset Form
-                    </button>
-
                     {/* Centered titles */}
-                    <div className="text-center">
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-3" style={{ color: '#34D399' }}>
-                            Toing By Swiggy
+                    <div className="text-center relative">
+                        <button
+                            type="button"
+                            onClick={resetForm}
+                            className="absolute top-0 right-0 text-red-400 hover:text-red-300 text-sm underline px-3 py-2 rounded-lg hover:bg-red-900/20 transition-colors z-10"
+                            disabled={isLoading || isSubmitting}
+                        >
+                            Reset Form
+                        </button>
+
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 pr-24" style={{ color: '#34D399' }}>
+                            Toing x Cashvertz
                         </h1>
-                        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-6" style={{ color: '#34D399' }}>
-                            Submit your order details
-                        </h2>
                     </div>
                 </div>
 
                 <p className="text-sm sm:text-base md:text-lg text-white/90 max-w-2xl mx-auto text-center leading-relaxed">
-                    Fill in your details and upload a screenshot of your Swiggy order to get started.
+                    Fill in your details and upload a screenshot of your Toing order to get started.
                 </p>
             </div>
 
@@ -782,20 +779,14 @@ const EventsPage = () => {
                                 <div className="bg-white/5 rounded-xl p-4 w-full">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-white/80">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-green-400">🎉</span>
                                             <span>Thank you for participating!</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-green-400">📋</span>
                                             <span>Details submitted for verification</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="text-green-400">⏰</span>
-                                            <span>Cashback in 15-20 working days</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-green-400">📱</span>
-                                            <span>SMS updates on your mobile</span>
+                                            <span>Cashback within 12 Hours</span>
                                         </div>
                                     </div>
                                 </div>
