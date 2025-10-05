@@ -729,15 +729,14 @@ const EventsPage = () => {
                 <div className="relative mb-8">
                     {/* Centered title */}
                     <div className="text-center">
-                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-6xl xl:text-7xl font-bold tracking-tight mb-8" style={{ color: '#34D399' }}>
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-6xl xl:text-7xl font-bold tracking-tight mb-2 sm:mb-4 md:mb-6 lg:mb-8" style={{ color: '#34D399' }}>
                             Toing X CashVertz
                         </h1>
+                        <p className="text-sm sm:text-base md:text-lg text-white/90 max-w-2xl mx-auto text-center leading-relaxed">
+                            Fill in your details and upload a screenshot of your Toing order to get started.
+                        </p>
                     </div>
                 </div>
-
-                <p className="text-sm sm:text-base md:text-lg text-white/90 max-w-2xl mx-auto text-center leading-relaxed">
-                    Fill in your details and upload a screenshot of your Toing order to get started.
-                </p>
             </div>
 
             {renderForm()}
